@@ -1,5 +1,5 @@
 from airflow.decorators import task, dag
-from datetime import datetime
+from datetime import datetime, date
 import os
 import pickle5 as pickle
 
@@ -8,6 +8,7 @@ from sklearn.pipeline import Pipeline
 
 import utils.basketball_reference_rodrixx as brr
 import utils.preprocessing_lib_rodrixx as prep
+import utils.postprocessing_lib_rodrixx as post
 
 
 DATA_PATH = '/opt/airflow/data'
@@ -76,12 +77,35 @@ def nba_mvp_predictor():
         prediction_file = os.path.join(DATA_PATH, prediction_name)
         prediction_series.to_pickle(prediction_file)
     
+    @task()
 
+    def postprocess_data(df_name_in = 'pre_df.pkl', df_name_out = 'final_df.pkl', players_name = 'players.pkl', prediction_name = 'prediction.pkl'):
+
+        df_file_in = os.path.join(DATA_PATH, df_name_in)
+        pre_df = pd.read_pickle(df_file_in)
+
+        players_file = os.path.join(DATA_PATH, players_name)
+        players_series = pd.read_pickle(players_file)
+
+        prediction_file = os.path.join(DATA_PATH, prediction_name)
+        prediction_series = pd.read_pickle(prediction_file)
+
+        post_df = post.get_processed_prediction(prediction_series, players_series)
+        post_df['Datetime'] = date.today()
+
+        pre_df.drop(columns = 'Season', inplace = True)
+
+        final_df = pd.concat([post_df, pre_df], axis = 1)
+        final_df.reset_index(inplace = True)
+
+        df_file_out = os.path.join(DATA_PATH, df_name_out)
+        final_df.to_pickle(df_file_out)
     
     data_import = import_data_br()
     data_preprocessed = preprocess_data()
     prediction = make_prediction()
+    data_postprocessed = postprocess_data()
 
-    data_import >> data_preprocessed >> prediction
+    data_import >> data_preprocessed >> prediction >> data_postprocessed
 
 predict_nba_mvp = nba_mvp_predictor()
