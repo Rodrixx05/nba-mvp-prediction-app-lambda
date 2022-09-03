@@ -1,6 +1,7 @@
 from airflow.decorators import task, dag
 from datetime import datetime, date
 import os
+import re
 import pickle5 as pickle
 
 import pandas as pd
@@ -15,7 +16,7 @@ DATA_PATH = '/opt/airflow/data'
 
 @dag(
     description='DAG which imports data daily from Basketball Reference and makes predictions on the MVP winner',
-    schedule_interval='*/30 * * * *',
+    schedule_interval='0 4 * * *',
     start_date=datetime(2022, 8, 1),
     catchup=False,
     tags=['nba'],
@@ -62,20 +63,29 @@ def nba_mvp_predictor():
     
     @task()
 
-    def make_prediction(df_name_in = 'pre_df.pkl', model_name = 'model_xgb.pkl', prediction_name = 'prediction.pkl'):
+    def make_prediction(df_name_in = 'pre_df.pkl', prediction_name = 'prediction.pkl'):
 
         df_file_in = os.path.join(DATA_PATH, df_name_in)
         post_df = pd.read_pickle(df_file_in)
 
-        model_file = os.path.join(DATA_PATH, model_name)
-        with open(model_file, 'rb') as file:
-            model = pickle.load(file)
+        predictions_list = []
+        model_names = [file for file in os.listdir(DATA_PATH) if re.match('^model_.+\.pkl$', file)]
+
+        for model_name in model_names:
+            model_file = os.path.join(DATA_PATH, model_name)
+            with open(model_file, 'rb') as file:
+                model = pickle.load(file)
         
-        prediction = model.predict(post_df)
-        prediction_series = pd.Series(prediction, index = post_df.index, name = 'PredShare')
+            prediction = model.predict(post_df)
+
+            model_type = re.match('^model_(.+)\.pkl$', model_name).group(1)
+            prediction_series = pd.Series(prediction, index = post_df.index, name = f'PredShare_{model_type}')
+            predictions_list.append(prediction_series)
+        
+        prediction_df = pd.concat(predictions_list, axis = 1)
 
         prediction_file = os.path.join(DATA_PATH, prediction_name)
-        prediction_series.to_pickle(prediction_file)
+        prediction_df.to_pickle(prediction_file)
     
     @task()
 
@@ -88,9 +98,9 @@ def nba_mvp_predictor():
         players_series = pd.read_pickle(players_file)
 
         prediction_file = os.path.join(DATA_PATH, prediction_name)
-        prediction_series = pd.read_pickle(prediction_file)
+        prediction_df = pd.read_pickle(prediction_file)
 
-        post_df = post.get_processed_prediction(prediction_series, players_series)
+        post_df = post.get_processed_prediction(prediction_df, players_series)
         post_df['Datetime'] = date.today()
 
         pre_df.drop(columns = 'Season', inplace = True)
