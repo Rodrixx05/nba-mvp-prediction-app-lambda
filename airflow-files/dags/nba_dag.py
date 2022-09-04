@@ -6,6 +6,7 @@ import pickle5 as pickle
 
 import pandas as pd
 from sklearn.pipeline import Pipeline
+from sqlalchemy import create_engine
 
 import utils.basketball_reference_rodrixx as brr
 import utils.preprocessing_lib_rodrixx as prep
@@ -107,15 +108,31 @@ def nba_mvp_predictor():
 
         final_df = pd.concat([post_df, pre_df], axis = 1)
         final_df.reset_index(inplace = True)
+        final_df.columns = map(post.format_column_name, final_df.columns)
 
         df_file_out = os.path.join(DATA_PATH, df_name_out)
         final_df.to_pickle(df_file_out)
+    
+    @task()
+
+    def insert_to_db(df_name_in = 'final_df.pkl'):
+        df_file_in = os.path.join(DATA_PATH, df_name_in)
+        final_df = pd.read_pickle(df_file_in)
+
+        conn_url = 'postgresql://Rodrixx:Jordan-23@postgres-nba:5432/nba_db'
+        conn = create_engine(conn_url)
+
+        final_df.to_sql('stats_predictions', conn, if_exists = 'append', index = False)
+
+
     
     data_import = import_data_br()
     data_preprocessed = preprocess_data()
     prediction = make_prediction()
     data_postprocessed = postprocess_data()
+    data_to_db = insert_to_db()
 
-    data_import >> data_preprocessed >> prediction >> data_postprocessed
+
+    data_import >> data_preprocessed >> prediction >> data_postprocessed >> data_to_db
 
 predict_nba_mvp = nba_mvp_predictor()
