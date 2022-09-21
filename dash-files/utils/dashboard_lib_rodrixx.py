@@ -4,9 +4,9 @@ def string_list_sql(mylist):
 def gen_models_columns(mylist):
     newlist = []
     for element in mylist:
-        mylist.append(f'PREDSHARE_{element}_ADJ')
-        mylist.append(f'PREDVOTES_{element}')
-    return element
+        newlist.append(f'PREDSHARE_{element}_ADJ')
+        newlist.append(f'PREDVOTES_{element}')
+    return newlist
 
 def gen_other_models_list(mylist, model):
     newlist = mylist.copy()
