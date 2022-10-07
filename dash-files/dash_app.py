@@ -1,7 +1,7 @@
 import pandas as pd
 from sqlalchemy import create_engine
 
-from dash import Dash, dcc, html
+from dash import Dash, dcc, html, dash_table
 from dash.dependencies import Input, Output
 import dash_bootstrap_components as dbc
 import plotly.express as px
@@ -101,6 +101,40 @@ app.layout = html.Div(
                                 dcc.RadioItems(id = 'radio_value_timeseries', options = results_labels, value = 'PREDSHARE', inputStyle={"margin-left": "8px", "margin-right": "5px"})
                             ], width = 'auto')
                     ], align = 'center', justify = 'evenly'))
+            ]), style={"margin-top": "25px"}),
+        dbc.Container(dbc.Card(
+            [
+                dbc.CardHeader(html.H3('Stats comparator', className = 'card_title', style={'textAlign': 'center'})),
+                dbc.CardBody(html.Div(dash_table.DataTable(
+                    id = 'table_stats', 
+                    data = [], 
+                    columns = [],
+                    style_cell = {'font-family': 'sans-serif', 'border': '1px solid black', 'color': 'black'},
+                    style_table = {'minWidth': '100%'},
+                    style_data_conditional=[
+                        {
+                            'if': {'row_index': 'odd'},
+                            'backgroundColor': 'rgb(220, 220, 220)',
+                        }],
+                    style_header = 
+                        {
+                        'backgroundColor': 'rgb(210, 210, 210)',
+                        'fontWeight': 'bold'
+                        },
+                    fixed_columns = {'headers': True, 'data': 1},
+                    fill_width = False,
+                    editable = False,
+                    filter_action = 'none',
+                    column_selectable = False,
+                    row_selectable = False,
+                    row_deletable = False,
+                    page_current = 0,
+                    page_size = 10
+                    ))),
+                dbc.CardFooter(dbc.Row(
+                    [
+                        dbc.Col(dcc.Dropdown(id = 'dropdown_stats', options = stats_list, placeholder = 'Choose stats', multi = True))
+                    ], align = 'center', justify = 'center'))
             ]), style={"margin-top": "25px"})
     ])
 
@@ -157,6 +191,51 @@ def update_timeseries(option, number, players, model, start_date, end_date, valu
         fig_timeseries = px.line(data_frame = timeseries_df, y = f'{value}_{model}', color = 'PLAYER')
         fig_timeseries.update_layout(yaxis_title = results_labels[value], xaxis_title = 'Date', legend_title = 'Players')
         return fig_timeseries
+
+@app.callback(
+    Output('table_stats', 'columns'),
+    Output('table_stats', 'data'),
+    Output('table_stats', 'style_cell_conditional'),
+    Input('radio_select_players', 'value'),
+    Input('number_players', 'value'),
+    Input('dropdown_players', 'value'),
+    Input('dropdown_model', 'value'),
+    Input('dropdown_stats', 'value')
+)
+def update_table_stats(option, number, players, model, stats):
+    if option == 'Best players':
+        query_stats = f"""
+            SELECT "DATETIME", "PLAYER", "PREDSHARE_{model}", "PREDVOTES_{model}"{', ' + dlib.string_list_sql(stats) if stats else ''} FROM {db_table_name}
+            WHERE "DATETIME" = '{max_datetime.strftime('%Y-%m-%d')}'
+            ORDER BY "PREDSHARE_{model}" DESC
+            LIMIT {number}     
+        """
+    else:
+        query_stats = f"""
+            SELECT "DATETIME", "PLAYER", "PREDSHARE_{model}", "PREDVOTES_{model}"{', ' + dlib.string_list_sql(stats) if stats else ''} FROM {db_table_name}
+            WHERE "DATETIME" = '{max_datetime.strftime('%Y-%m-%d')}'
+            AND "PLAYER" IN ({str(players)[1:-1]})
+            ORDER BY "PREDSHARE_{model}" DESC
+        """
+    stats_df = pd.read_sql(query_stats, engine)
+    stats_df.drop(columns = "DATETIME", inplace = True)
+    cols = []
+    for col in stats_df.columns:
+        col_dict = {'name': col, 'id': col}
+        if col == 'PLAYER':
+            col_dict['type'] = 'text'
+        else:
+            col_dict['type'] = 'numeric'
+            if '_PC_' in col and 'RANK' not in col:
+                col_dict['format'] = {'specifier': '.2~%'}
+            else:
+                col_dict['format'] = {'specifier': '.2~f'}
+        cols.append(col_dict)
+    style = [
+        {'if': {'column_id': 'PLAYER'}, 'textAlign': 'left'}
+    ]
+    data = stats_df.to_dict('records')
+    return cols, data, style
 
 if __name__ == '__main__':
     app.run_server(debug=True, port=8090)
