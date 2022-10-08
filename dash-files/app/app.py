@@ -16,7 +16,7 @@ db_table_name = 'stats_predictions'
 results_labels = {'PREDSHARE': 'Predicted Share', 'PREDVOTES': 'Predicted Votes'}
 # pio.templates.default = 'ggplot2'
 
-conn_url = 'postgresql://Rodrixx:Jordan-23@localhost:5432/nba_db'
+conn_url = 'postgresql://Rodrixx:Jordan-23@postgres-nba:5432/nba_db'
 engine = create_engine(conn_url)
 
 query_columns = f"""
@@ -47,7 +47,7 @@ no_stats_list = ['SEASON', 'RK', 'PLAYER', 'AGE', 'TM', 'POS']
 stats_list = list(set(columns_list) - (set(dlib.gen_models_columns(models_list)) | set(no_stats_list)))
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.CERULEAN])
-application = app.server
+server = app.server
 
 app.layout = html.Div(
     [
@@ -236,6 +236,3 @@ def update_table_stats(option, number, players, model, stats):
     ]
     data = stats_df.to_dict('records')
     return cols, data, style
-
-if __name__ == '__main__':
-    app.run_server(debug=True, port=8090)

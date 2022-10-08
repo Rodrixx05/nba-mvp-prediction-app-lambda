@@ -1,0 +1,38 @@
+version: '3'
+
+services:
+  postgres-nba:
+    container_name: postgres-nba
+    image: postgres:13
+    environment:
+      POSTGRES_USER: 'Rodrixx'
+      POSTGRES_PASSWORD: 'Jordan-23'
+      POSTGRES_DB: 'nba_db'
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-db-nba:/var/lib/postgresql/data
+
+  dash-app:
+    container_name: dash-app
+    image: rodrixx/nba-dash-app
+    build: ./dash-files/
+    # restart: always
+    depends_on:
+      - postgres-nba
+    expose: 
+      - "8080"
+    command: gunicorn -w 1 -b 0.0.0.0:8080 app:server
+  
+  webserver:
+    container_name: webserver
+    image: rodrixx/nginx-nba-webserver
+    build: ./nginx-files/
+    # restart: always
+    depends_on:
+      - postgres-nba    
+    ports: 
+      - "80:80"
+
+volumes:
+  postgres-db-nba:
