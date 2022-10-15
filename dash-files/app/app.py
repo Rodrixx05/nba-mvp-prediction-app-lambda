@@ -226,7 +226,7 @@ def update_table_stats(option, number, players, model, stats):
             col_dict['type'] = 'text'
         else:
             col_dict['type'] = 'numeric'
-            if '_PC_' in col and 'RANK' not in col:
+            if '#' in col and 'RANK' not in col:
                 col_dict['format'] = {'specifier': '.2~%'}
             else:
                 col_dict['format'] = {'specifier': '.2~f'}

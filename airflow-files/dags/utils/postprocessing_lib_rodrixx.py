@@ -29,5 +29,5 @@ def get_processed_prediction(pred_val_y, players_names, num_contenders = 17, tot
     return df_results
 
 def format_column_name(column):
-    return column.upper().replace('%', '_PC_')
+    return column.upper().replace('%', '#')
 

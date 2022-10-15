@@ -18,7 +18,7 @@ DATA_PATH = '/opt/airflow/data'
 @dag(
     description='DAG which imports data daily from Basketball Reference and makes predictions on the MVP winner',
     schedule_interval='0 4 * * *',
-    start_date=datetime(2022, 8, 1),
+    start_date=datetime(2022, 10, 18),
     catchup=False,
     tags=['nba'],
 )
@@ -42,25 +42,29 @@ def nba_mvp_predictor():
         df_file_in = os.path.join(DATA_PATH, df_name_in)
         pre_df = pd.read_pickle(df_file_in)
 
-        cols_to_drop = ['Rk', 'GT', 'FG_tot', '3PA_tot', '2PA_tot', 'FGA_rank_tot', 'Tm', 'Pos']
+        cols_tot = [col for col in pre_df.columns if '_tot' in col]
+        cols_to_drop = ['Rk', 'G', 'GS', 'GT', 'Votes', 'MaxVotes', 'Tm']
+        cols_to_drop += cols_tot
         cols_to_filter = ['PER', 'WS/48', 'BPM', 'USG%']
+        col_to_ohe = 'Pos'
 
         pipe_prep = Pipeline(steps = [
             ('DropPlayersMultiTeams', prep.DropPlayersMultiTeams()),
             ('OutlierFilter', prep.OutlierFilter(q = .0005, col_to_filter = cols_to_filter)),
             ('SetIndex', prep.SetIndex()),
+            ('OHE', prep.OHE(col_to_ohe)),
             ('DropColumns', prep.DropColumns(cols_to_drop)),
             ('DropPlayers', prep.DropPlayers()),
         ])
+
         pre_df = pipe_prep.fit_transform(pre_df)
 
         df_file_out = os.path.join(DATA_PATH, df_name_out)
         pre_df.to_pickle(df_file_out)
 
-        players_series = pipe_prep['DropPlayers'].players_list_
+        players_series = pipe_prep['DropPlayers'].players_list
         players_file = os.path.join(DATA_PATH, players_name)
-        players_series.to_pickle(players_file)
-        
+        players_series.to_pickle(players_file)    
     
     @task()
 
@@ -123,8 +127,6 @@ def nba_mvp_predictor():
         conn = create_engine(conn_url)
 
         final_df.to_sql('stats_predictions', conn, if_exists = 'append', index = False)
-
-
     
     data_import = import_data_br()
     data_preprocessed = preprocess_data()
