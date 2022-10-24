@@ -18,7 +18,7 @@ DATA_PATH = '/opt/airflow/data'
 @dag(
     description='DAG which imports data daily from Basketball Reference and makes predictions on the MVP winner',
     schedule_interval='0 4 * * *',
-    start_date=datetime(2022, 10, 18),
+    start_date=datetime(2022, 10, 16),
     catchup=False,
     tags=['nba'],
 )
@@ -37,20 +37,18 @@ def nba_mvp_predictor():
     
     @task()
     
-    def preprocess_data(df_name_in = 'raw_df.pkl', df_name_out = 'pre_df.pkl', players_name = 'players.pkl'):
+    def preprocess_data(df_name_in = 'raw_df.pkl', df_name_out = 'pre_df.pkl', players_name = 'players.pkl', ohe_name = 'ohecol.pkl', dropcols_name = 'dropcols.pkl'):
 
         df_file_in = os.path.join(DATA_PATH, df_name_in)
         pre_df = pd.read_pickle(df_file_in)
 
         cols_tot = [col for col in pre_df.columns if '_tot' in col]
-        cols_to_drop = ['Rk', 'G', 'GS', 'GT', 'Votes', 'MaxVotes', 'Tm']
+        cols_to_drop = ['Rk', 'G', 'GS', 'GT', 'Tm']
         cols_to_drop += cols_tot
-        cols_to_filter = ['PER', 'WS/48', 'BPM', 'USG%']
         col_to_ohe = 'Pos'
 
         pipe_prep = Pipeline(steps = [
             ('DropPlayersMultiTeams', prep.DropPlayersMultiTeams()),
-            ('OutlierFilter', prep.OutlierFilter(q = .0005, col_to_filter = cols_to_filter)),
             ('SetIndex', prep.SetIndex()),
             ('OHE', prep.OHE(col_to_ohe)),
             ('DropColumns', prep.DropColumns(cols_to_drop)),
@@ -64,7 +62,15 @@ def nba_mvp_predictor():
 
         players_series = pipe_prep['DropPlayers'].players_list
         players_file = os.path.join(DATA_PATH, players_name)
-        players_series.to_pickle(players_file)    
+        players_series.to_pickle(players_file)
+
+        ohe_series = pipe_prep['OHE'].ohe_series
+        ohe_file = os.path.join(DATA_PATH, ohe_name)
+        ohe_series.to_pickle(ohe_file) 
+
+        dropcols_df = pipe_prep['DropColumns'].drop_df
+        dropcols_file = os.path.join(DATA_PATH, dropcols_name)
+        dropcols_df.to_pickle(dropcols_file) 
     
     @task()
 
@@ -94,7 +100,7 @@ def nba_mvp_predictor():
     
     @task()
 
-    def postprocess_data(df_name_in = 'pre_df.pkl', df_name_out = 'final_df.pkl', players_name = 'players.pkl', prediction_name = 'prediction.pkl'):
+    def postprocess_data(df_name_in = 'pre_df.pkl', df_name_out = 'final_df.pkl', players_name = 'players.pkl', ohe_name = 'ohecol.pkl', dropcols_name = 'dropcols.pkl', prediction_name = 'prediction.pkl'):
 
         df_file_in = os.path.join(DATA_PATH, df_name_in)
         pre_df = pd.read_pickle(df_file_in)
@@ -102,16 +108,22 @@ def nba_mvp_predictor():
         players_file = os.path.join(DATA_PATH, players_name)
         players_series = pd.read_pickle(players_file)
 
+        ohe_file = os.path.join(DATA_PATH, ohe_name)
+        ohe_series = pd.read_pickle(ohe_file)
+
+        dropcols_file = os.path.join(DATA_PATH, dropcols_name)
+        dropcols_df = pd.read_pickle(dropcols_file)     
+
         prediction_file = os.path.join(DATA_PATH, prediction_name)
         prediction_df = pd.read_pickle(prediction_file)
 
         post_df = post.get_processed_prediction(prediction_df, players_series)
-        post_df['Datetime'] = date.today()
-
-        pre_df.drop(columns = 'Season', inplace = True)
+        # post_df['Datetime'] = date.today()
+        post_df['Datetime'] = datetime(2022, 10, 27)
 
         final_df = pd.concat([post_df, pre_df], axis = 1)
-        final_df.reset_index(inplace = True)
+        final_df = post.add_deleted_columns(final_df, dropcols_df, ohe_series)
+        final_df.reset_index(inplace = True, drop = True)
         final_df.columns = map(post.format_column_name, final_df.columns)
 
         df_file_out = os.path.join(DATA_PATH, df_name_out)
@@ -126,7 +138,7 @@ def nba_mvp_predictor():
         conn_url = 'postgresql://Rodrixx:Jordan-23@postgres-nba:5432/nba_db'
         conn = create_engine(conn_url)
 
-        final_df.to_sql('stats_predictions', conn, if_exists = 'append', index = False)
+        final_df.to_sql('stats_predictions_2023', conn, if_exists = 'append', index = False)
     
     data_import = import_data_br()
     data_preprocessed = preprocess_data()

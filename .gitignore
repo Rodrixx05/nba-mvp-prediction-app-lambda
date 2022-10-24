@@ -4,3 +4,4 @@ logs
 *.pkl
 !airflow-files/data/model*
 .vscode
+.env

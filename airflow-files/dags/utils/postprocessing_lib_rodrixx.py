@@ -28,6 +28,11 @@ def get_processed_prediction(pred_val_y, players_names, num_contenders = 17, tot
 
     return df_results
 
+def add_deleted_columns(base_df, dropcols_df, ohe_series):
+    dummy_cols = [col for col in base_df.columns if ohe_series.name + '_' in col]
+    base_df.drop(columns = dummy_cols, inplace = True)
+    return pd.concat([base_df, dropcols_df, ohe_series], axis = 1)
+
 def format_column_name(column):
     return column.upper().replace('%', '#')
 

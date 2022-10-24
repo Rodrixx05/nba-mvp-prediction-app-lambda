@@ -15,20 +15,17 @@ services:
 
   dash-app:
     container_name: dash-app
-    image: rodrixx/nba-dash-app
+    image: rodrixx/nba-dash-app:0.2
     build: ./dash-files/
-    # restart: always
+    restart: on-failure:5
     depends_on:
       - postgres-nba
-    expose: 
-      - "8080"
-    command: gunicorn -w 1 -b 0.0.0.0:8080 app:server
   
   webserver:
     container_name: webserver
     image: rodrixx/nginx-nba-webserver
     build: ./nginx-files/
-    # restart: always
+    restart: on-failure:5
     depends_on:
       - postgres-nba    
     ports: 

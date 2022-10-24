@@ -12,7 +12,7 @@ import re
 
 import utils.dashboard_lib_rodrixx as dlib
 
-db_table_name = 'stats_predictions'
+db_table_name = 'stats_predictions_2023'
 results_labels = {'PREDSHARE': 'Predicted Share', 'PREDVOTES': 'Predicted Votes'}
 # pio.templates.default = 'ggplot2'
 
