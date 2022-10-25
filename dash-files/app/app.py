@@ -9,14 +9,14 @@ import plotly.graph_objects as go
 import plotly.io as pio
 
 import re
+import os
 
 import utils.dashboard_lib_rodrixx as dlib
 
 db_table_name = 'stats_predictions_2023'
 results_labels = {'PREDSHARE': 'Predicted Share', 'PREDVOTES': 'Predicted Votes'}
-# pio.templates.default = 'ggplot2'
 
-conn_url = 'postgresql://Rodrixx:Jordan-23@postgres-nba:5432/nba_db'
+conn_url = os.getenv('NBA_DB_CON')
 engine = create_engine(conn_url)
 
 query_columns = f"""

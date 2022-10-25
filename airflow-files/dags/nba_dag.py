@@ -135,7 +135,7 @@ def nba_mvp_predictor():
         df_file_in = os.path.join(DATA_PATH, df_name_in)
         final_df = pd.read_pickle(df_file_in)
 
-        conn_url = 'postgresql://Rodrixx:Jordan-23@postgres-nba:5432/nba_db'
+        conn_url = os.getenv('NBA_DB_CON')
         conn = create_engine(conn_url)
 
         final_df.to_sql('stats_predictions_2023', conn, if_exists = 'append', index = False)

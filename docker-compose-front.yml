@@ -6,12 +6,13 @@ services:
     image: postgres:13
     environment:
       POSTGRES_USER: 'Rodrixx'
-      POSTGRES_PASSWORD: 'Jordan-23'
+      POSTGRES_PASSWORD: '${NBA_DB_PASS}'
       POSTGRES_DB: 'nba_db'
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres-db-nba:/var/lib/postgresql/data
+    restart: always
 
   dash-app:
     container_name: dash-app
@@ -20,6 +21,8 @@ services:
     restart: on-failure:5
     depends_on:
       - postgres-nba
+    env_file:
+      - .env
   
   webserver:
     container_name: webserver
