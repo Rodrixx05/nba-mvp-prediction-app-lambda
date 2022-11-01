@@ -30,9 +30,12 @@ services:
     build: ./nginx-files/
     restart: on-failure:5
     depends_on:
-      - postgres-nba    
+      - postgres-nba
+      - dash-app
+      - airflow-webserver  
     ports: 
       - "80:80"
+      - "8080:8080"
 
 volumes:
   postgres-db-nba:
