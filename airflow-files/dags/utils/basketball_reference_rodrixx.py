@@ -44,7 +44,8 @@ class BasketballReferenceGetter():
         """
         year = df['Season'].unique()[0]
         teams = list(df['Tm'].unique())
-        teams.remove('TOT')
+        if 'TOT' in teams:
+            teams.remove('TOT')
         df_season_records = pd.DataFrame(teams, columns = ['Tm'])
         df_season_records['Record'] = df_season_records['Tm'].apply(self._get_team_record, args = (year,))
         df_season_records['W'] = df_season_records['Record'].apply(lambda x: x.split('-')[0]).astype(int)

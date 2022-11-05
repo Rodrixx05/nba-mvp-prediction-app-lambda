@@ -27,7 +27,7 @@ def nba_mvp_predictor():
 
     @task()
 
-    def import_data_br(year = 2022, df_name_out = 'raw_df.pkl'):
+    def import_data_br(year = 2023, df_name_out = 'raw_df.pkl'):
 
         getter = brr.BasketballReferenceGetter()
         raw_df = getter.extract_player_stats_multiple(year, mvp = False, advanced = True, ranks = True)
@@ -118,8 +118,7 @@ def nba_mvp_predictor():
         prediction_df = pd.read_pickle(prediction_file)
 
         post_df = post.get_processed_prediction(prediction_df, players_series)
-        # post_df['Datetime'] = date.today()
-        post_df['Datetime'] = datetime(2022, 10, 27)
+        post_df['Datetime'] = date.today()
 
         final_df = pd.concat([post_df, pre_df], axis = 1)
         final_df = post.add_deleted_columns(final_df, dropcols_df, ohe_series)
