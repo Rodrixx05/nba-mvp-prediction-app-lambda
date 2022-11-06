@@ -17,7 +17,7 @@ DATA_PATH = '/opt/airflow/data'
 
 @dag(
     description='DAG which imports data daily from Basketball Reference and makes predictions on the MVP winner',
-    schedule_interval='0 4 * * *',
+    schedule_interval='0 10 * * *',
     start_date=datetime(2022, 10, 16),
     catchup=False,
     tags=['nba'],
