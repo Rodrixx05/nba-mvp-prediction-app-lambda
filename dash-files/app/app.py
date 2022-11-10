@@ -135,8 +135,29 @@ app.layout = html.Div(
                     [
                         dbc.Col(dcc.Dropdown(id = 'dropdown_stats', options = stats_list, placeholder = 'Choose stats', multi = True))
                     ], align = 'center', justify = 'center'))
-            ]), style={"margin-top": "25px"})
+            ]), style={"margin-top": "25px"}),
+        dcc.Interval(id = 'refresh_page', interval = 1000 * 60 * 30, n_intervals = 0)
     ])
+
+@app.callback(
+    Output('daterange_timeseries', 'min_date_allowed'),
+    Output('daterange_timeseries', 'max_date_allowed'),
+    Output('dropdown_players', 'options'),
+    Input('refresh_page', 'n_intervals')
+)
+
+def update_dates_players(n):
+    with engine.connect() as con:
+        result_players = con.execute(query_players)
+        result_datetime = con.execute(query_datetime)
+
+    players_list = [element[0] for element in result_players]
+    players_list.sort(key = lambda x: x.split(' ')[1])
+    tuple_datetime = list(result_datetime)[0]
+    max_datetime = tuple_datetime[0]
+    min_datetime = tuple_datetime[1]
+    
+    return min_datetime, max_datetime, players_list
 
 @app.callback(
     Output('container_best_players', 'style'),
