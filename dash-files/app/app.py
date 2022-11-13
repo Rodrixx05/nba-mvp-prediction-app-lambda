@@ -94,7 +94,7 @@ app.layout = html.Div(
                         dbc.Col(
                             [
                                 html.H5('Select desired interval', style={'textAlign': 'center'}),
-                                dcc.DatePickerRange(id = 'daterange_timeseries', min_date_allowed = min_datetime, max_date_allowed = max_datetime, initial_visible_month = max_datetime, start_date = min_datetime, end_date = max_datetime),
+                                dcc.DatePickerRange(id = 'daterange_timeseries', min_date_allowed = min_datetime, max_date_allowed = max_datetime, initial_visible_month = max_datetime, start_date = min_datetime, end_date = max_datetime, display_format = 'DD/MM/YYYY'),
                             ], width = 'auto'),
                         dbc.Col(
                             [
@@ -201,8 +201,9 @@ def update_timeseries(option, number, players, model, start_date, end_date, valu
             ORDER BY "DATETIME" DESC, "{value}_{model}" DESC;
         """
         timeseries_df = pd.read_sql(query_timeseries, engine, index_col = "DATETIME", parse_dates = ["DATETIME"])
-        fig_timeseries = px.line(data_frame = timeseries_df, y = f'{value}_{model}', color = 'PLAYER')
+        fig_timeseries = px.line(data_frame = timeseries_df, y = f'{value}_{model}', color = 'PLAYER', hover_name = 'PLAYER', hover_data = {'PLAYER': False, f'{value}_{model}': '.3f'})
         fig_timeseries.update_layout(yaxis_title = results_labels[value], xaxis_title = 'Date', legend_title = 'Players', margin=dict(l=20, r=20, t=20, b=20))
+        fig_timeseries.update_traces(mode = "markers+lines")        
         return fig_timeseries
     else:
         query_timeseries = f"""
@@ -212,8 +213,9 @@ def update_timeseries(option, number, players, model, start_date, end_date, valu
             ORDER BY "DATETIME" DESC, "{value}_{model}" DESC;
         """
         timeseries_df = pd.read_sql(query_timeseries, engine, index_col = "DATETIME", parse_dates = ["DATETIME"])
-        fig_timeseries = px.line(data_frame = timeseries_df, y = f'{value}_{model}', color = 'PLAYER')
-        fig_timeseries.update_layout(yaxis_title = results_labels[value], xaxis_title = 'Date', legend_title = 'Players')
+        fig_timeseries = px.line(data_frame = timeseries_df, y = f'{value}_{model}', color = 'PLAYER', hover_name = 'PLAYER', hover_data = {'PLAYER': False, f'{value}_{model}': '.3f'})
+        fig_timeseries.update_layout(yaxis_title = results_labels[value], xaxis_title = 'Date', legend_title = 'Players', margin=dict(l=20, r=20, t=20, b=20))
+        fig_timeseries.update_traces(mode = "markers+lines")
         return fig_timeseries
 
 @app.callback(
