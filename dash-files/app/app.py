@@ -8,6 +8,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import plotly.io as pio
 
+from datetime import datetime
 import re
 import os
 
@@ -105,7 +106,7 @@ app.layout = html.Div(
         dbc.Container(dbc.Card(
             [
                 dbc.CardHeader(html.H3('Stats comparator', className = 'card_title', style={'textAlign': 'center'})),
-                dbc.CardBody(html.Div(dash_table.DataTable(
+                dbc.CardBody(dbc.Row(dbc.Col(dash_table.DataTable(
                     id = 'table_stats', 
                     data = [], 
                     columns = [],
@@ -130,34 +131,36 @@ app.layout = html.Div(
                     row_deletable = False,
                     page_current = 0,
                     page_size = 10
-                    ))),
+                    ), class_name = 'center'))),
                 dbc.CardFooter(dbc.Row(
                     [
                         dbc.Col(dcc.Dropdown(id = 'dropdown_stats', options = stats_list, placeholder = 'Choose stats', multi = True))
                     ], align = 'center', justify = 'center'))
             ]), style={"margin-top": "25px"}),
-        dcc.Interval(id = 'refresh_page', interval = 1000 * 60 * 30, n_intervals = 0)
+        dcc.Interval(id = 'refresh_page', interval = 1000 * 60 * 60, n_intervals = 0)
     ])
 
 @app.callback(
     Output('daterange_timeseries', 'min_date_allowed'),
     Output('daterange_timeseries', 'max_date_allowed'),
+    Output('daterange_timeseries', 'end_date'),
     Output('dropdown_players', 'options'),
     Input('refresh_page', 'n_intervals')
 )
 
 def update_dates_players(n):
-    with engine.connect() as con:
-        result_players = con.execute(query_players)
-        result_datetime = con.execute(query_datetime)
+    if datetime.now().hour == 10:
+        with engine.connect() as con:
+            result_players_new = con.execute(query_players)
+            result_datetime_new = con.execute(query_datetime)
 
-    players_list = [element[0] for element in result_players]
-    players_list.sort(key = lambda x: x.split(' ')[1])
-    tuple_datetime = list(result_datetime)[0]
-    max_datetime = tuple_datetime[0]
-    min_datetime = tuple_datetime[1]
-    
-    return min_datetime, max_datetime, players_list
+        players_list_new = [element[0] for element in result_players_new]
+        players_list_new.sort(key = lambda x: x.split(' ')[1])
+        tuple_datetime_new = list(result_datetime_new)[0]
+        max_datetime_new = tuple_datetime_new[0]
+        min_datetime_new = tuple_datetime_new[1]
+        
+        return min_datetime_new, max_datetime_new, max_datetime_new, players_list_new
 
 @app.callback(
     Output('container_best_players', 'style'),
@@ -190,12 +193,12 @@ def update_timeseries(option, number, players, model, start_date, end_date, valu
             WHERE "PLAYER" IN (
                 SELECT "PLAYER" FROM (
                     SELECT "PLAYER", "DATETIME", "{value}_{model}" FROM {db_table_name}
-                    WHERE "DATETIME" IN (SELECT max("DATETIME") FROM {db_table_name})
+                    WHERE "DATETIME" = '{end_date}'
                     ORDER BY "{value}_{model}" DESC
                     LIMIT {number}
                 ) AS best_players 
             ) AND "DATETIME" BETWEEN '{start_date}' AND '{end_date}'
-            ORDER BY "DATETIME" DESC;
+            ORDER BY "DATETIME" DESC, "{value}_{model}" DESC;
         """
         timeseries_df = pd.read_sql(query_timeseries, engine, index_col = "DATETIME", parse_dates = ["DATETIME"])
         fig_timeseries = px.line(data_frame = timeseries_df, y = f'{value}_{model}', color = 'PLAYER')
@@ -206,7 +209,7 @@ def update_timeseries(option, number, players, model, start_date, end_date, valu
             SELECT "DATETIME", "PLAYER", "{value}_{model}" FROM {db_table_name}
             WHERE "PLAYER" IN ({str(players)[1:-1]})
             AND "DATETIME" BETWEEN '{start_date}' AND '{end_date}'
-            ORDER BY "DATETIME" DESC;
+            ORDER BY "DATETIME" DESC, "{value}_{model}" DESC;
         """
         timeseries_df = pd.read_sql(query_timeseries, engine, index_col = "DATETIME", parse_dates = ["DATETIME"])
         fig_timeseries = px.line(data_frame = timeseries_df, y = f'{value}_{model}', color = 'PLAYER')
