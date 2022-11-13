@@ -5,8 +5,6 @@ from dash import Dash, dcc, html, dash_table
 from dash.dependencies import Input, Output
 import dash_bootstrap_components as dbc
 import plotly.express as px
-import plotly.graph_objects as go
-import plotly.io as pio
 
 from datetime import datetime
 import re
@@ -46,6 +44,8 @@ min_datetime = tuple_datetime[1]
 models_list = [re.search('^PREDVOTES_(.+)', element).group(1) for element in columns_list if re.search('^PREDVOTES', element)]
 no_stats_list = ['SEASON', 'RK', 'PLAYER', 'AGE', 'TM', 'POS']
 stats_list = list(set(columns_list) - (set(dlib.gen_models_columns(models_list)) | set(no_stats_list)))
+stats_options = [{'label': dlib.cols_translator[col], 'value': col} for col in stats_list]
+stats_options.sort(key = lambda x: x['label'])
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.CERULEAN])
 server = app.server
@@ -134,7 +134,7 @@ app.layout = html.Div(
                     ), class_name = 'center'))),
                 dbc.CardFooter(dbc.Row(
                     [
-                        dbc.Col(dcc.Dropdown(id = 'dropdown_stats', options = stats_list, placeholder = 'Choose stats', multi = True))
+                        dbc.Col(dcc.Dropdown(id = 'dropdown_stats', options = stats_options, placeholder = 'Choose stats', multi = True))
                     ], align = 'center', justify = 'center'))
             ]), style={"margin-top": "25px"}),
         dcc.Interval(id = 'refresh_page', interval = 1000 * 60 * 60, n_intervals = 0)
@@ -245,7 +245,7 @@ def update_table_stats(option, number, players, model, stats):
     stats_df.drop(columns = "DATETIME", inplace = True)
     cols = []
     for col in stats_df.columns:
-        col_dict = {'name': col, 'id': col}
+        col_dict = {'name': dlib.cols_translator[col], 'id': col}
         if col == 'PLAYER':
             col_dict['type'] = 'text'
         else:
