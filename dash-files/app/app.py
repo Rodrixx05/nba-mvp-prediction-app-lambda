@@ -141,7 +141,6 @@ app.layout = html.Div(
     ])
 
 @app.callback(
-    Output('daterange_timeseries', 'min_date_allowed'),
     Output('daterange_timeseries', 'max_date_allowed'),
     Output('daterange_timeseries', 'end_date'),
     Output('dropdown_players', 'options'),
@@ -149,7 +148,7 @@ app.layout = html.Div(
 )
 
 def update_dates_players(n):
-    if datetime.now().hour == 10:
+    if datetime.now().hour == 12:
         with engine.connect() as con:
             result_players_new = con.execute(query_players)
             result_datetime_new = con.execute(query_datetime)
@@ -158,9 +157,8 @@ def update_dates_players(n):
         players_list_new.sort(key = lambda x: x.split(' ')[1])
         tuple_datetime_new = list(result_datetime_new)[0]
         max_datetime_new = tuple_datetime_new[0]
-        min_datetime_new = tuple_datetime_new[1]
         
-        return min_datetime_new, max_datetime_new, max_datetime_new, players_list_new
+        return max_datetime_new, max_datetime_new, players_list_new
 
 @app.callback(
     Output('container_best_players', 'style'),
