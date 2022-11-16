@@ -2,7 +2,7 @@ import pandas as pd
 from sqlalchemy import create_engine
 
 from dash import Dash, dcc, html, dash_table
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 import dash_bootstrap_components as dbc
 import plotly.express as px
 
@@ -27,138 +27,123 @@ query_players = f"""
 """
 query_datetime = f"""
     SELECT max("DATETIME"), min("DATETIME") FROM {db_table_name}
-"""
+    """
 
-with engine.connect() as con:
-    result_columns = con.execute(query_columns)
-    result_players = con.execute(query_players)
-    result_datetime = con.execute(query_datetime)
+def serve_layout():
 
-columns_list = [element[0] for element in result_columns]
-players_list = [element[0] for element in result_players]
-players_list.sort(key = lambda x: x.split(' ')[1])
-tuple_datetime = list(result_datetime)[0]
-max_datetime = tuple_datetime[0]
-min_datetime = tuple_datetime[1]
+    with engine.connect() as con:
+        result_columns = con.execute(query_columns)
+        result_players = con.execute(query_players)
+        result_datetime = con.execute(query_datetime)
 
-models_list = [re.search('^PREDVOTES_(.+)', element).group(1) for element in columns_list if re.search('^PREDVOTES', element)]
-no_stats_list = ['SEASON', 'RK', 'PLAYER', 'AGE', 'TM', 'POS']
-stats_list = list(set(columns_list) - (set(dlib.gen_models_columns(models_list)) | set(no_stats_list)))
-stats_options = [{'label': dlib.cols_translator[col], 'value': col} for col in stats_list]
-stats_options.sort(key = lambda x: x['label'])
+    columns_list = [element[0] for element in result_columns]
+    players_list = [element[0] for element in result_players]
+    players_list.sort(key = lambda x: x.split(' ')[1])
+    tuple_datetime = list(result_datetime)[0]
+    max_datetime = tuple_datetime[0]
+    min_datetime = tuple_datetime[1]
+
+    models_list = [re.search('^PREDVOTES_(.+)', element).group(1) for element in columns_list if re.search('^PREDVOTES', element)]
+    no_stats_list = ['SEASON', 'RK', 'PLAYER', 'AGE', 'TM', 'POS']
+    stats_list = list(set(columns_list) - (set(dlib.gen_models_columns(models_list)) | set(no_stats_list)))
+    stats_options = [{'label': dlib.cols_translator[col], 'value': col} for col in stats_list]
+    stats_options.sort(key = lambda x: x['label'])
+
+    layout = html.Div(
+        [
+            dbc.Row(dbc.Col(html.H1('MVP Prediction App - Season 2022/23', style={'textAlign': 'center'}))),
+            dbc.Row(dbc.Col(html.P('Want to check which player is doing better in the NBA right now? You\'re in the right place!', style={'textAlign': 'center'}), width = 8), justify = 'center'),
+            dbc.Row(dbc.Col(html.P('This webpage displays the results of trained ML models that predict the NBA\'s MVP of the current season.', style={'textAlign': 'center'}), width = 10), justify = 'center'),
+            dbc.Row(dbc.Col(html.P('Fiddle with all the options and have fun!', style={'textAlign': 'center'}), width = 10), justify = 'center'),
+            dbc.Container(dbc.Card(
+                [
+                    dbc.CardHeader(html.H3('Initial configuration', className = 'card_title', style={'textAlign': 'center'})),
+                    dbc.CardBody(dbc.Container(
+                    [
+                        dbc.Row(
+                            [
+                                dbc.Col(html.H4('Select players', style={'textAlign': 'center'}), width = 6),
+                                dbc.Col(html.H4('Select model', style={'textAlign': 'center'}), width = 6)
+                            ], justify = 'center'),
+                        dbc.Row(
+                            [
+                                dbc.Col(dcc.RadioItems(id = 'radio_select_players', options = ['Best players', 'Choose players'], value = 'Best players', inputStyle={"margin-left": "5px", "margin-right": "5px"}), width = 3),
+                                dbc.Col(
+                                    [
+                                        html.Div(children = 
+                                            [
+                                                dcc.Input(id = 'number_players', type = 'number', min = 2, max = 10, step = 1, placeholder = 'Nº Players', style={'width': 100}, value = 3)
+                                            ], id = 'container_best_players', style = {'display': 'flex', 'justify-content': 'center'}),
+                                        html.Div(children = 
+                                            [
+                                                dcc.Dropdown(id = 'dropdown_players', options = players_list, placeholder = 'Select players', multi = True)
+                                            ], id = 'container_custom_players', style = {'display': 'none'})
+                                    ], width = 3),
+                                dbc.Col(dcc.Dropdown(id = 'dropdown_model', options = models_list, value = models_list[0], placeholder = 'Select a model'), width = {'size': 4, 'offset': 1}),
+                                dbc.Col(width = 1)
+                            ], align = 'center', justify = 'center')
+                    ]))
+                ])),
+            dbc.Container(dbc.Card(
+                [
+                    dbc.CardHeader(html.H3('MVP score timeseries', className = 'card_title', style={'textAlign': 'center'})),
+                    dbc.CardBody(dcc.Graph(id = 'graph_timeseries', figure = {})),
+                    dbc.CardFooter(dbc.Row(
+                        [
+                            dbc.Col(
+                                [
+                                    html.H5('Select desired interval', style={'textAlign': 'center'}),
+                                    dcc.DatePickerRange(id = 'daterange_timeseries', min_date_allowed = min_datetime, max_date_allowed = max_datetime, initial_visible_month = max_datetime, start_date = min_datetime, end_date = max_datetime, display_format = 'DD/MM/YYYY'),
+                                ], width = 'auto'),
+                            dbc.Col(
+                                [
+                                    html.H5('Choose model output', style={'textAlign': 'center'}),
+                                    dcc.RadioItems(id = 'radio_value_timeseries', options = results_labels, value = 'PREDSHARE', inputStyle={"margin-left": "8px", "margin-right": "5px"})
+                                ], width = 'auto')
+                        ], align = 'center', justify = 'evenly'))
+                ]), style={"margin-top": "25px"}),
+            dbc.Container(dbc.Card(
+                [
+                    dbc.CardHeader(html.H3('Stats comparator', className = 'card_title', style={'textAlign': 'center'})),
+                    dbc.CardBody(dbc.Row(dbc.Col(dash_table.DataTable(
+                        id = 'table_stats', 
+                        data = [], 
+                        columns = [],
+                        style_cell = {'font-family': 'sans-serif', 'border': '1px solid black', 'color': 'black'},
+                        style_table = {'minWidth': '100%'},
+                        style_data_conditional=[
+                            {
+                                'if': {'row_index': 'odd'},
+                                'backgroundColor': 'rgb(220, 220, 220)',
+                            }],
+                        style_header = 
+                            {
+                            'backgroundColor': 'rgb(210, 210, 210)',
+                            'fontWeight': 'bold'
+                            },
+                        fixed_columns = {'headers': True, 'data': 1},
+                        fill_width = False,
+                        editable = False,
+                        filter_action = 'none',
+                        column_selectable = False,
+                        row_selectable = False,
+                        row_deletable = False,
+                        page_current = 0,
+                        page_size = 10
+                        ), class_name = 'center'))),
+                    dbc.CardFooter(dbc.Row(
+                        [
+                            dbc.Col(dcc.Dropdown(id = 'dropdown_stats', options = stats_options, placeholder = 'Choose stats', multi = True))
+                        ], align = 'center', justify = 'center'))
+                ]), style={"margin-top": "25px"})
+        ])
+    
+    return layout
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.CERULEAN])
 server = app.server
 
-app.layout = html.Div(
-    [
-        dbc.Row(dbc.Col(html.H1('MVP Prediction App - Season 2022/23', style={'textAlign': 'center'}))),
-        dbc.Row(dbc.Col(html.P('Want to check which player is doing better in the NBA right now? You\'re in the right place!', style={'textAlign': 'center'}), width = 8), justify = 'center'),
-        dbc.Row(dbc.Col(html.P('This webpage displays the results of trained ML models that predict the NBA\'s MVP of the current season.', style={'textAlign': 'center'}), width = 10), justify = 'center'),
-        dbc.Row(dbc.Col(html.P('Fiddle with all the options and have fun!', style={'textAlign': 'center'}), width = 10), justify = 'center'),
-        dbc.Container(dbc.Card(
-            [
-                dbc.CardHeader(html.H3('Initial configuration', className = 'card_title', style={'textAlign': 'center'})),
-                dbc.CardBody(dbc.Container(
-                [
-                    dbc.Row(
-                        [
-                            dbc.Col(html.H4('Select players', style={'textAlign': 'center'}), width = 6),
-                            dbc.Col(html.H4('Select model', style={'textAlign': 'center'}), width = 6)
-                        ], justify = 'center'),
-                    dbc.Row(
-                        [
-                            dbc.Col(dcc.RadioItems(id = 'radio_select_players', options = ['Best players', 'Choose players'], value = 'Best players', inputStyle={"margin-left": "5px", "margin-right": "5px"}), width = 3),
-                            dbc.Col(
-                                [
-                                    html.Div(children = 
-                                        [
-                                            dcc.Input(id = 'number_players', type = 'number', min = 2, max = 10, step = 1, placeholder = 'Nº Players', style={'width': 100}, value = 3)
-                                        ], id = 'container_best_players', style = {'display': 'flex', 'justify-content': 'center'}),
-                                    html.Div(children = 
-                                        [
-                                            dcc.Dropdown(id = 'dropdown_players', options = players_list, placeholder = 'Select players', multi = True)
-                                        ], id = 'container_custom_players', style = {'display': 'none'})
-                                ], width = 3),
-                            dbc.Col(dcc.Dropdown(id = 'dropdown_model', options = models_list, value = models_list[0], placeholder = 'Select a model'), width = {'size': 4, 'offset': 1}),
-                            dbc.Col(width = 1)
-                        ], align = 'center', justify = 'center')
-                ]))
-            ])),
-        dbc.Container(dbc.Card(
-            [
-                dbc.CardHeader(html.H3('MVP score timeseries', className = 'card_title', style={'textAlign': 'center'})),
-                dbc.CardBody(dcc.Graph(id = 'graph_timeseries', figure = {})),
-                dbc.CardFooter(dbc.Row(
-                    [
-                        dbc.Col(
-                            [
-                                html.H5('Select desired interval', style={'textAlign': 'center'}),
-                                dcc.DatePickerRange(id = 'daterange_timeseries', min_date_allowed = min_datetime, max_date_allowed = max_datetime, initial_visible_month = max_datetime, start_date = min_datetime, end_date = max_datetime, display_format = 'DD/MM/YYYY'),
-                            ], width = 'auto'),
-                        dbc.Col(
-                            [
-                                html.H5('Choose model output', style={'textAlign': 'center'}),
-                                dcc.RadioItems(id = 'radio_value_timeseries', options = results_labels, value = 'PREDSHARE', inputStyle={"margin-left": "8px", "margin-right": "5px"})
-                            ], width = 'auto')
-                    ], align = 'center', justify = 'evenly'))
-            ]), style={"margin-top": "25px"}),
-        dbc.Container(dbc.Card(
-            [
-                dbc.CardHeader(html.H3('Stats comparator', className = 'card_title', style={'textAlign': 'center'})),
-                dbc.CardBody(dbc.Row(dbc.Col(dash_table.DataTable(
-                    id = 'table_stats', 
-                    data = [], 
-                    columns = [],
-                    style_cell = {'font-family': 'sans-serif', 'border': '1px solid black', 'color': 'black'},
-                    style_table = {'minWidth': '100%'},
-                    style_data_conditional=[
-                        {
-                            'if': {'row_index': 'odd'},
-                            'backgroundColor': 'rgb(220, 220, 220)',
-                        }],
-                    style_header = 
-                        {
-                        'backgroundColor': 'rgb(210, 210, 210)',
-                        'fontWeight': 'bold'
-                        },
-                    fixed_columns = {'headers': True, 'data': 1},
-                    fill_width = False,
-                    editable = False,
-                    filter_action = 'none',
-                    column_selectable = False,
-                    row_selectable = False,
-                    row_deletable = False,
-                    page_current = 0,
-                    page_size = 10
-                    ), class_name = 'center'))),
-                dbc.CardFooter(dbc.Row(
-                    [
-                        dbc.Col(dcc.Dropdown(id = 'dropdown_stats', options = stats_options, placeholder = 'Choose stats', multi = True))
-                    ], align = 'center', justify = 'center'))
-            ]), style={"margin-top": "25px"}),
-        dcc.Interval(id = 'refresh_page', interval = 1000 * 60 * 60, n_intervals = 0)
-    ])
-
-@app.callback(
-    Output('daterange_timeseries', 'max_date_allowed'),
-    Output('daterange_timeseries', 'end_date'),
-    Output('dropdown_players', 'options'),
-    Input('refresh_page', 'n_intervals')
-)
-
-def update_dates_players(n):
-    if datetime.now().hour == 12:
-        with engine.connect() as con:
-            result_players_new = con.execute(query_players)
-            result_datetime_new = con.execute(query_datetime)
-
-        players_list_new = [element[0] for element in result_players_new]
-        players_list_new.sort(key = lambda x: x.split(' ')[1])
-        tuple_datetime_new = list(result_datetime_new)[0]
-        max_datetime_new = tuple_datetime_new[0]
-        
-        return max_datetime_new, max_datetime_new, players_list_new
+app.layout = serve_layout
 
 @app.callback(
     Output('container_best_players', 'style'),
@@ -224,20 +209,21 @@ def update_timeseries(option, number, players, model, start_date, end_date, valu
     Input('number_players', 'value'),
     Input('dropdown_players', 'value'),
     Input('dropdown_model', 'value'),
-    Input('dropdown_stats', 'value')
+    Input('dropdown_stats', 'value'),
+    State('daterange_timeseries', 'max_date_allowed')
 )
-def update_table_stats(option, number, players, model, stats):
+def update_table_stats(option, number, players, model, stats, max_datetime):
     if option == 'Best players':
         query_stats = f"""
             SELECT "DATETIME", "PLAYER", "PREDSHARE_{model}", "PREDVOTES_{model}"{', ' + dlib.string_list_sql(stats) if stats else ''} FROM {db_table_name}
-            WHERE "DATETIME" = '{max_datetime.strftime('%Y-%m-%d')}'
+            WHERE "DATETIME" = '{max_datetime}'
             ORDER BY "PREDSHARE_{model}" DESC
             LIMIT {number}     
         """
     else:
         query_stats = f"""
             SELECT "DATETIME", "PLAYER", "PREDSHARE_{model}", "PREDVOTES_{model}"{', ' + dlib.string_list_sql(stats) if stats else ''} FROM {db_table_name}
-            WHERE "DATETIME" = '{max_datetime.strftime('%Y-%m-%d')}'
+            WHERE "DATETIME" = '{max_datetime}'
             AND "PLAYER" IN ({str(players)[1:-1]})
             ORDER BY "PREDSHARE_{model}" DESC
         """
