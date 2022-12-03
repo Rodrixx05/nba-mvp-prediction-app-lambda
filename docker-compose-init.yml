@@ -8,6 +8,7 @@ services:
       POSTGRES_USER: 'Rodrixx'
       POSTGRES_PASSWORD: '${NBA_DB_PASS}'
       POSTGRES_DB: 'nba_db'
+      POSTGRES_DB_ARGS: '--encoding=UTF-8'
     ports:
       - "5432:5432"
     volumes:
