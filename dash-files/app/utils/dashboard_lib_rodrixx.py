@@ -1,18 +1,19 @@
 def string_list_sql(mylist):
     return str(mylist)[1:-1].replace('\'', '\"')
 
-def gen_models_columns(mylist):
-    newlist = []
-    for element in mylist:
-        newlist.append(f'PREDSHARE_{element}_ADJ')
-        newlist.append(f'PREDVOTES_{element}')
-    return newlist
+def gen_models_columns(mylist, cols):
+    returnlist = []
+    for model in mylist:
+        model_cols = list(filter(lambda x: model in x, cols))
+        returnlist += model_cols
+    return returnlist
 
-def gen_other_models_list(mylist, model):
+def gen_metric_cols_list(mylist, selected_model, metric):
     newlist = mylist.copy()
-    newlist.remove(model)
-    sqlist = gen_models_columns(newlist)
-    return string_list_sql(sqlist)
+    newlist.remove(selected_model)
+    newlist.insert(0, selected_model)
+    returnlist = list(map(lambda x: f'{metric}_{x}' if 'ADJ' not in metric else f'PREDSHARE_{x}_ADJ', newlist))
+    return string_list_sql(returnlist)
 
 cols_translator = {
     "MP_TOT": "Min Tot",
@@ -166,7 +167,19 @@ cols_translator = {
 }
 
 models_translator = {
-    'RF': 'Random Forest',
-    'ENS': 'Ensemble',
-    'XGB': 'Extreme Gradient Boosting'
+    'RF': 'Random Forest (RF)',
+    'ENS': 'Ensemble (ENS)',
+    'XGB': 'XGBoost (XGB)'
 }
+
+results_labels = [
+    {'label': 'Predicted Share', 'value': 'PREDSHARE'},
+    {'label': 'Predicted Votes', 'value': 'PREDVOTES'},
+]
+
+ext_results_labels = [
+    {'label': 'Predicted Share', 'value': 'PREDSHARE'},
+    {'label': 'Predicted Votes', 'value': 'PREDVOTES'},
+    {'label': 'Adjusted Predicted Share', 'value': 'PREDSHARE_ADJ'},
+    {'label': 'Predicted Rank', 'value': 'PREDRANK'},
+]

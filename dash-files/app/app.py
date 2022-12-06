@@ -12,7 +12,6 @@ import os
 import utils.dashboard_lib_rodrixx as dlib
 
 db_table_name = 'stats_predictions_2023'
-results_labels = {'PREDSHARE': 'Predicted Share', 'PREDVOTES': 'Predicted Votes'}
 
 conn_url = os.getenv('NBA_DB_CON')
 engine = create_engine(conn_url)
@@ -44,9 +43,9 @@ def serve_layout():
 
     models_list = [re.search('^PREDVOTES_(.+)', element).group(1) for element in columns_list if re.search('^PREDVOTES', element)]
     models_options = [{'label': dlib.models_translator[model], 'value': model} for model in models_list]
-    models_options.sort(key = lambda x: x['label'], reverse = True)
+    models_options.sort(key = lambda x: x['label'])
     no_stats_list = ['SEASON', 'RK', 'PLAYER', 'AGE', 'TM', 'POS']
-    stats_list = list(set(columns_list) - (set(dlib.gen_models_columns(models_list)) | set(no_stats_list)))
+    stats_list = list(set(columns_list) - (set(dlib.gen_models_columns(models_list, columns_list)) | set(no_stats_list)))
     stats_options = [{'label': dlib.cols_translator[col], 'value': col} for col in stats_list]
     stats_options.sort(key = lambda x: x['label'])
 
@@ -86,7 +85,7 @@ def serve_layout():
                                                 dcc.Dropdown(id = 'dropdown_players', options = players_list, placeholder = 'Select players', multi = True)
                                             ], id = 'container_custom_players', style = {'display': 'none'})
                                     ], width = 3),
-                                dbc.Col(dcc.Dropdown(id = 'dropdown_model', options = models_options, value = models_options[0]['value'], placeholder = 'Select a model'), width = {'size': 4, 'offset': 1}),
+                                dbc.Col(dcc.Dropdown(id = 'dropdown_model', options = models_options, value = models_options[1]['value'], placeholder = 'Select a model'), width = {'size': 4, 'offset': 1}),
                                 dbc.Col(width = 1)
                             ], align = 'center', justify = 'center')
                     ]))
@@ -105,9 +104,42 @@ def serve_layout():
                             dbc.Col(
                                 [
                                     html.H5('Select model output', style={'textAlign': 'center'}),
-                                    dcc.RadioItems(id = 'radio_value_timeseries', options = results_labels, value = 'PREDSHARE', inputStyle={"margin-left": "8px", "margin-right": "5px"})
+                                    dcc.RadioItems(id = 'radio_value_timeseries', options = dlib.results_labels, value = 'PREDSHARE', inputStyle={"margin-left": "8px", "margin-right": "5px"})
                                 ], width = 'auto')
                         ], align = 'center', justify = 'evenly'))
+                ]), style={"margin-top": "25px"}),
+            dbc.Container(dbc.Card(
+                [
+                    dbc.CardHeader(html.H3('Models comparator', className = 'card_title', style={'textAlign': 'center'})),
+                    dbc.CardBody(dbc.Row(dbc.Col(dash_table.DataTable(
+                        id = 'table_models', 
+                        data = [], 
+                        columns = [],
+                        style_cell = {'font-family': 'sans-serif', 'border': '1px solid black', 'color': 'black'},
+                        style_table = {'minWidth': '100%'},
+                        style_data_conditional=[
+                            {
+                                'if': {'row_index': 'odd'},
+                                'backgroundColor': 'rgb(220, 220, 220)',
+                            }],
+                        style_header = 
+                            {
+                            'backgroundColor': 'rgb(210, 210, 210)',
+                            'fontWeight': 'bold'
+                            },
+                        fill_width = False,
+                        editable = False,
+                        filter_action = 'none',
+                        column_selectable = False,
+                        cell_selectable = False,
+                        row_deletable = False,
+                        page_current = 0,
+                        page_size = 10
+                        ), width = 'auto'), align = 'center', justify = 'center')),
+                    dbc.CardFooter(dbc.Row(
+                        [
+                            dbc.Col(dcc.RadioItems(id = 'radio_metric_models', options = dlib.ext_results_labels, value = 'PREDSHARE', inputStyle={"margin-left": "8px", "margin-right": "5px"}), width = 'auto')
+                        ], align = 'center', justify = 'center'))
                 ]), style={"margin-top": "25px"}),
             dbc.Container(dbc.Card(
                 [
@@ -189,12 +221,7 @@ def update_timeseries(option, number, players, model, start_date, end_date, valu
                 ) AS best_players 
             ) AND "DATETIME" BETWEEN '{start_date}' AND '{end_date}'
             ORDER BY "DATETIME" DESC, "{value}_{model}" DESC;
-        """
-        timeseries_df = pd.read_sql(query_timeseries, engine, index_col = "DATETIME", parse_dates = ["DATETIME"])
-        fig_timeseries = px.line(data_frame = timeseries_df, y = f'{value}_{model}', color = 'PLAYER', hover_name = 'PLAYER', hover_data = {'PLAYER': False, f'{value}_{model}': ':.3f'})
-        fig_timeseries.update_layout(yaxis_title = results_labels[value], xaxis_title = 'Date', legend_title = 'Players', margin=dict(l=20, r=20, t=20, b=20))
-        fig_timeseries.update_traces(mode = "markers+lines")        
-        return fig_timeseries
+        """       
     else:
         query_timeseries = f"""
             SELECT "DATETIME", "PLAYER", "{value}_{model}" FROM {db_table_name}
@@ -202,11 +229,63 @@ def update_timeseries(option, number, players, model, start_date, end_date, valu
             AND "DATETIME" BETWEEN '{start_date}' AND '{end_date}'
             ORDER BY "DATETIME" DESC, "{value}_{model}" DESC;
         """
-        timeseries_df = pd.read_sql(query_timeseries, engine, index_col = "DATETIME", parse_dates = ["DATETIME"])
-        fig_timeseries = px.line(data_frame = timeseries_df, y = f'{value}_{model}', color = 'PLAYER', hover_name = 'PLAYER', hover_data = {'PLAYER': False, f'{value}_{model}': ':.3f'})
-        fig_timeseries.update_layout(yaxis_title = results_labels[value], xaxis_title = 'Date', legend_title = 'Players', margin=dict(l=20, r=20, t=20, b=20))
-        fig_timeseries.update_traces(mode = "markers+lines")
-        return fig_timeseries
+    timeseries_df = pd.read_sql(query_timeseries, engine, index_col = "DATETIME", parse_dates = ["DATETIME"])
+    fig_timeseries = px.line(data_frame = timeseries_df, y = f'{value}_{model}', color = 'PLAYER', hover_name = 'PLAYER', hover_data = {'PLAYER': False, f'{value}_{model}': ':.3f'})
+    y_label = list(filter(lambda x: x['value'] == value, dlib.results_labels))[0]['label']
+    fig_timeseries.update_layout(yaxis_title = y_label, xaxis_title = 'Date', legend_title = 'Players', margin=dict(l=20, r=20, t=20, b=20))
+    fig_timeseries.update_traces(mode = "markers+lines")
+    return fig_timeseries
+
+@app.callback(
+    Output('table_models', 'columns'),
+    Output('table_models', 'data'),
+    Output('table_models', 'style_cell_conditional'),
+    Input('radio_select_players', 'value'),
+    Input('number_players', 'value'),
+    Input('dropdown_players', 'value'),
+    Input('dropdown_model', 'value'),
+    Input('radio_metric_models', 'value'),
+    State('dropdown_model', 'options'),
+    State('daterange_timeseries', 'max_date_allowed'),
+)
+
+def update_table_models(option, number, players, model, metric, models_options, max_datetime):
+    models_list = [model['value'] for model in models_options]
+    sql_metric_cols_list = dlib.gen_metric_cols_list(models_list, model, metric)
+    if option == 'Best players':
+        query_models = f"""
+            SELECT "DATETIME", "PLAYER", {sql_metric_cols_list} FROM {db_table_name}
+            WHERE "DATETIME" = '{max_datetime}'
+            ORDER BY "PREDSHARE_{model}" DESC
+            LIMIT {number};     
+        """
+    else:
+        query_models = f"""
+            SELECT "DATETIME", "PLAYER", {sql_metric_cols_list} FROM {db_table_name}
+            WHERE "DATETIME" = '{max_datetime}'
+            AND "PLAYER" IN ({str(players)[1:-1]})
+            ORDER BY "PREDSHARE_{model}" DESC;
+        """
+    models_df = pd.read_sql(query_models, engine)
+    models_df.drop(columns = "DATETIME", inplace = True)
+    cols = []
+    for col in models_df.columns:
+        if col == 'PLAYER':
+            col_dict = {'name': dlib.cols_translator[col], 'id': col}
+            col_dict['type'] = 'text'
+        else:
+            col_dict = {'name': dlib.models_translator[col.split('_')[1]], 'id': col}
+            col_dict['type'] = 'numeric'
+            if 'SHARE' in col:
+                col_dict['format'] = {'specifier': '.2~f'}
+            else:
+                col_dict['format'] = {'specifier': 'd'}
+        cols.append(col_dict)
+    style = [
+        {'if': {'column_id': 'PLAYER'}, 'textAlign': 'left'}
+    ]
+    data = models_df.to_dict('records')
+    return cols, data, style  
 
 @app.callback(
     Output('table_stats', 'columns'),
@@ -225,14 +304,14 @@ def update_table_stats(option, number, players, model, stats, max_datetime):
             SELECT "DATETIME", "PLAYER", "PREDSHARE_{model}", "PREDVOTES_{model}"{', ' + dlib.string_list_sql(stats) if stats else ''} FROM {db_table_name}
             WHERE "DATETIME" = '{max_datetime}'
             ORDER BY "PREDSHARE_{model}" DESC
-            LIMIT {number}     
+            LIMIT {number} ;    
         """
     else:
         query_stats = f"""
             SELECT "DATETIME", "PLAYER", "PREDSHARE_{model}", "PREDVOTES_{model}"{', ' + dlib.string_list_sql(stats) if stats else ''} FROM {db_table_name}
             WHERE "DATETIME" = '{max_datetime}'
             AND "PLAYER" IN ({str(players)[1:-1]})
-            ORDER BY "PREDSHARE_{model}" DESC
+            ORDER BY "PREDSHARE_{model}" DESC;
         """
     stats_df = pd.read_sql(query_stats, engine)
     stats_df.drop(columns = "DATETIME", inplace = True)
