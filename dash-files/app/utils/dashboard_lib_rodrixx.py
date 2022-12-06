@@ -164,3 +164,9 @@ cols_translator = {
     "PLAYER": "Player",
     "POS": "Position"
 }
+
+models_translator = {
+    'RF': 'Random Forest',
+    'ENS': 'Ensemble',
+    'XGB': 'Extreme Gradient Boosting'
+}

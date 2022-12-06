@@ -1,12 +1,11 @@
 import pandas as pd
 from sqlalchemy import create_engine
 
-from dash import Dash, dcc, html, dash_table
+from dash import Dash, dcc, html, dash_table, get_asset_url
 from dash.dependencies import Input, Output, State
 import dash_bootstrap_components as dbc
 import plotly.express as px
 
-from datetime import datetime
 import re
 import os
 
@@ -44,6 +43,8 @@ def serve_layout():
     min_datetime = tuple_datetime[1]
 
     models_list = [re.search('^PREDVOTES_(.+)', element).group(1) for element in columns_list if re.search('^PREDVOTES', element)]
+    models_options = [{'label': dlib.models_translator[model], 'value': model} for model in models_list]
+    models_options.sort(key = lambda x: x['label'], reverse = True)
     no_stats_list = ['SEASON', 'RK', 'PLAYER', 'AGE', 'TM', 'POS']
     stats_list = list(set(columns_list) - (set(dlib.gen_models_columns(models_list)) | set(no_stats_list)))
     stats_options = [{'label': dlib.cols_translator[col], 'value': col} for col in stats_list]
@@ -51,10 +52,16 @@ def serve_layout():
 
     layout = html.Div(
         [
-            dbc.Row(dbc.Col(html.H1('MVP Prediction App - Season 2022/23', style={'textAlign': 'center'}))),
-            dbc.Row(dbc.Col(html.P('Want to check which player is doing better in the NBA right now? You\'re in the right place!', style={'textAlign': 'center'}), width = 8), justify = 'center'),
-            dbc.Row(dbc.Col(html.P('This webpage displays the results of trained ML models that predict the NBA\'s MVP of the current season.', style={'textAlign': 'center'}), width = 10), justify = 'center'),
-            dbc.Row(dbc.Col(html.P('Fiddle with all the options and have fun!', style={'textAlign': 'center'}), width = 10), justify = 'center'),
+            dbc.Row([
+                dbc.Col(html.Img(src = get_asset_url('nba_logo.jpg'), style={'width':'100%', 'border-radius': '10%'}), width = 2, style={'textAlign': 'center'}),
+                dbc.Col([
+                    dbc.Row(dbc.Col(html.H1('MVP Prediction App - Season 2022/23', style={'textAlign': 'center', 'margin-bottom': '30px'}))),
+                    dbc.Row(dbc.Col(html.P('Want to check which player is doing better in the NBA right now? You\'re in the right place!', style={'textAlign': 'center'})), justify = 'center'),
+                    dbc.Row(dbc.Col(html.P('This webpage displays the results of trained ML models that predict the NBA\'s MVP of the current season.', style={'textAlign': 'center'})), justify = 'center'),
+                    dbc.Row(dbc.Col(html.P('Fiddle with all the options and have fun!', style={'textAlign': 'center'})), justify = 'center'),
+                ]),
+                dbc.Col(html.Img(src = get_asset_url('br_logo.png'), style={'width':'100%', 'border-radius': '10%'}), width = 2, style={'textAlign': 'center'})
+            ], align = 'center', style={"height": "50%", 'margin-top': '20px', 'margin-left': '20px', 'margin-right': '20px', 'margin-bottom': '30px'}),
             dbc.Container(dbc.Card(
                 [
                     dbc.CardHeader(html.H3('Initial configuration', className = 'card_title', style={'textAlign': 'center'})),
@@ -63,7 +70,7 @@ def serve_layout():
                         dbc.Row(
                             [
                                 dbc.Col(html.H4('Select players', style={'textAlign': 'center'}), width = 6),
-                                dbc.Col(html.H4('Select model', style={'textAlign': 'center'}), width = 6)
+                                dbc.Col(html.H4('Select ML model', style={'textAlign': 'center'}), width = 6)
                             ], justify = 'center'),
                         dbc.Row(
                             [
@@ -79,7 +86,7 @@ def serve_layout():
                                                 dcc.Dropdown(id = 'dropdown_players', options = players_list, placeholder = 'Select players', multi = True)
                                             ], id = 'container_custom_players', style = {'display': 'none'})
                                     ], width = 3),
-                                dbc.Col(dcc.Dropdown(id = 'dropdown_model', options = models_list, value = models_list[0], placeholder = 'Select a model'), width = {'size': 4, 'offset': 1}),
+                                dbc.Col(dcc.Dropdown(id = 'dropdown_model', options = models_options, value = models_options[0]['value'], placeholder = 'Select a model'), width = {'size': 4, 'offset': 1}),
                                 dbc.Col(width = 1)
                             ], align = 'center', justify = 'center')
                     ]))
@@ -97,7 +104,7 @@ def serve_layout():
                                 ], width = 'auto'),
                             dbc.Col(
                                 [
-                                    html.H5('Choose model output', style={'textAlign': 'center'}),
+                                    html.H5('Select model output', style={'textAlign': 'center'}),
                                     dcc.RadioItems(id = 'radio_value_timeseries', options = results_labels, value = 'PREDSHARE', inputStyle={"margin-left": "8px", "margin-right": "5px"})
                                 ], width = 'auto')
                         ], align = 'center', justify = 'evenly'))
