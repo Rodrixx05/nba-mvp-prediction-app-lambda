@@ -12,8 +12,7 @@ def gen_metric_cols_list(mylist, selected_model, metric):
     newlist = mylist.copy()
     newlist.remove(selected_model)
     newlist.insert(0, selected_model)
-    returnlist = list(map(lambda x: f'{metric}_{x}' if 'ADJ' not in metric else f'PREDSHARE_{x}_ADJ', newlist))
-    return string_list_sql(returnlist)
+    return list(map(lambda x: f'{metric}_{x}' if 'ADJ' not in metric else f'PREDSHARE_{x}_ADJ', newlist))
 
 cols_translator = {
     "MP_TOT": "Min Tot",

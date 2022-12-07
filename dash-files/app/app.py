@@ -117,11 +117,6 @@ def serve_layout():
                         columns = [],
                         style_cell = {'font-family': 'sans-serif', 'border': '1px solid black', 'color': 'black'},
                         style_table = {'minWidth': '100%'},
-                        style_data_conditional=[
-                            {
-                                'if': {'row_index': 'odd'},
-                                'backgroundColor': 'rgb(220, 220, 220)',
-                            }],
                         style_header = 
                             {
                             'backgroundColor': 'rgb(210, 210, 210)',
@@ -131,6 +126,7 @@ def serve_layout():
                         editable = False,
                         filter_action = 'none',
                         column_selectable = False,
+                        row_selectable = 'single',
                         cell_selectable = False,
                         row_deletable = False,
                         page_current = 0,
@@ -239,19 +235,22 @@ def update_timeseries(option, number, players, model, start_date, end_date, valu
 @app.callback(
     Output('table_models', 'columns'),
     Output('table_models', 'data'),
+    Output('table_models', 'style_data_conditional'),
     Output('table_models', 'style_cell_conditional'),
     Input('radio_select_players', 'value'),
     Input('number_players', 'value'),
     Input('dropdown_players', 'value'),
     Input('dropdown_model', 'value'),
     Input('radio_metric_models', 'value'),
+    Input('table_models', 'selected_rows'),
     State('dropdown_model', 'options'),
     State('daterange_timeseries', 'max_date_allowed'),
 )
 
-def update_table_models(option, number, players, model, metric, models_options, max_datetime):
+def update_table_models(option, number, players, model, metric, rows, models_options, max_datetime):
     models_list = [model['value'] for model in models_options]
-    sql_metric_cols_list = dlib.gen_metric_cols_list(models_list, model, metric)
+    metric_cols_list = dlib.gen_metric_cols_list(models_list, model, metric)
+    sql_metric_cols_list = dlib.string_list_sql(metric_cols_list)
     if option == 'Best players':
         query_models = f"""
             SELECT "DATETIME", "PLAYER", {sql_metric_cols_list} FROM {db_table_name}
@@ -281,11 +280,46 @@ def update_table_models(option, number, players, model, metric, models_options, 
             else:
                 col_dict['format'] = {'specifier': 'd'}
         cols.append(col_dict)
-    style = [
-        {'if': {'column_id': 'PLAYER'}, 'textAlign': 'left'}
-    ]
+    
+    style_cell = [{'if': {'column_id': 'PLAYER'}, 'textAlign': 'left'}]
+
+    style_data = [{'if': {'column_id': f'{metric_cols_list[0]}'}, 'fontWeight': 'bold'}]
+
+    if rows:
+        border_style = '2px dashed royalBlue'
+        border_conditional = [
+            {
+                'if': {'row_index': rows[0], 'column_id': ['PLAYER'] + metric_cols_list}, 
+                'border-top': border_style,
+                'border-bottom': border_style
+            },
+            {
+                'if': {'row_index': rows[0], 'column_id': 'PLAYER'},
+                'border-left': border_style
+            },
+            {
+                'if': {'row_index': rows[0], 'column_id': metric_cols_list[-1]},
+                'border-right': border_style
+            }
+
+        ]
+        style_data += border_conditional
+
+    for element in metric_cols_list[1:]:
+        conditional_style = [
+            {
+                'if': {'filter_query': '{{{0}}} > {{{1}}}'.format(element, metric_cols_list[0]), 'column_id': f'{element}'},
+                'backgroundColor': '#98FB98'
+            },
+            {
+                'if': {'filter_query': '{{{0}}} < {{{1}}}'.format(element, metric_cols_list[0]), 'column_id': f'{element}'},
+                'backgroundColor': '#DB7093'            
+            }]
+        style_data += conditional_style
+
     data = models_df.to_dict('records')
-    return cols, data, style  
+
+    return cols, data, style_data, style_cell 
 
 @app.callback(
     Output('table_stats', 'columns'),
