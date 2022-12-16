@@ -170,7 +170,12 @@ def serve_layout():
                         [
                             dbc.Col(dcc.Dropdown(id = 'dropdown_stats', options = stats_options, placeholder = 'Choose stats', multi = True))
                         ], align = 'center', justify = 'center'))
-                ]), style={"margin-top": "25px"})
+                ]), style={"margin-top": "25px", "margin-bottom": "25px"}),
+            html.Footer(children = 
+                [
+                    'Stats are updated every day at 10:00:00 (UTC time) from ',
+                    html.A('Basketball Reference', href = 'https://basketball-reference.com', target = '_blank')
+                ], style = {'textAlign': 'center'})
         ])
     
     return layout
