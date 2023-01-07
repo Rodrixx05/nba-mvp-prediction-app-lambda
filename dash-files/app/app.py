@@ -313,12 +313,16 @@ def update_table_models(option, number, players, model, metric, rows, models_opt
     for element in metric_cols_list[1:]:
         conditional_style = [
             {
-                'if': {'filter_query': '{{{0}}} > {{{1}}}'.format(element, metric_cols_list[0]), 'column_id': f'{element}'},
+                'if': {'filter_query': '{{{0}}} {2} {{{1}}}'.format(element, metric_cols_list[0], '<' if metric == 'PREDRANK' else '>'), 'column_id': f'{element}'},
                 'backgroundColor': '#98FB98'
             },
             {
-                'if': {'filter_query': '{{{0}}} < {{{1}}}'.format(element, metric_cols_list[0]), 'column_id': f'{element}'},
+                'if': {'filter_query': '{{{0}}} {2} {{{1}}}'.format(element, metric_cols_list[0], '>' if metric == 'PREDRANK' else '<'), 'column_id': f'{element}'},
                 'backgroundColor': '#DB7093'            
+            },
+            {
+                'if': {'filter_query': '{{{0}}} = {{{1}}}'.format(element, metric_cols_list[0]), 'column_id': f'{element}'},
+                'backgroundColor': '#FFC047'
             }]
         style_data += conditional_style
 
