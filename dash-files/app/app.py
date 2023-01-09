@@ -181,6 +181,7 @@ def serve_layout():
     return layout
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.CERULEAN])
+app.title = 'NBA MVP Prediction App'
 server = app.server
 
 app.layout = serve_layout
