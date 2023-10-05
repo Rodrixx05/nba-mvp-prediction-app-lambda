@@ -1,0 +1,19 @@
+version: '3'
+
+services:
+  postgres-nba:
+    container_name: postgres-nba
+    image: postgres:13
+    environment:
+      POSTGRES_USER: 'Rodrixx'
+      POSTGRES_PASSWORD: '${NBA_DB_PASS}'
+      POSTGRES_DB: 'nba_db'
+      POSTGRES_DB_ARGS: '--encoding=UTF-8'
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-db-stats:/var/lib/postgresql/data
+    restart: always
+
+volumes:
+  postgres-db-stats:
