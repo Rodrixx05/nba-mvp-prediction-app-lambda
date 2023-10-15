@@ -1,0 +1,32 @@
+version: '3'
+
+services:
+  postgres_mlflow:
+    container_name: postgres-mlflow
+    image: postgres:13
+    environment:
+      POSTGRES_USER: 'Rodrixx'
+      POSTGRES_PASSWORD: '${MLFLOW_DB_PASS}'
+      POSTGRES_DB: 'mlflow_db'
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-db-mlflow:/var/lib/postgresql/data
+    restart: always
+  
+  mlflow:
+    container_name: mlflow
+    image: rodrixx/mlflow:1.0
+    build: ./mlflow-files/
+    environment:
+      MLFLOW_BACKEND_STORE_URI: '${MLFLOW_DB_CON}'
+      MLFLOW_DEFAULT_ARTIFACT_ROOT: '${MLFLOW_S3_CON}'
+      MLFLOW_HOST: '0.0.0.0'
+    ports:
+      - "5000:5000"
+    restart: always
+    depends_on:
+      - postgres_mlflow
+
+volumes:
+  postgres-db-mlflow:
