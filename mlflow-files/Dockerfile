@@ -6,5 +6,5 @@ RUN pip install -r requirements.txt
 
 EXPOSE 5000
 
-ENTRYPOINT sleep 10 && mlflow server --app-name basic-auth 
+ENTRYPOINT sleep 10 && mlflow server --app-name basic-auth --workers 1
 
