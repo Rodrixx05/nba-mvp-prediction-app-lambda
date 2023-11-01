@@ -14,6 +14,11 @@ def gen_metric_cols_list(mylist, selected_model, metric):
     newlist.insert(0, selected_model)
     return list(map(lambda x: f'{metric}_{x}' if 'ADJ' not in metric else f'PREDSHARE_{x}_ADJ', newlist))
 
+def id_factory(page: str):
+    def func(_id: str):
+        return f"{page}-{_id}"
+    return func
+
 cols_translator = {
     "MP_TOT": "Min Tot",
     "PREDSHARE_RF": "Predicted Share RF",

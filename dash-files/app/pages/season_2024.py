@@ -14,6 +14,8 @@ import utils.dashboard_lib_rodrixx as dlib
 
 season = 2024
 
+id = dlib.id_factory(f'page{season}')
+
 db_table_name = f'stats_predictions_{season}'
 
 conn_url = os.getenv('NBA_DB_CON')
@@ -67,19 +69,19 @@ def serve_layout():
                             ], justify = 'center'),
                         dbc.Row(
                             [
-                                dbc.Col(dcc.RadioItems(id = 'radio_select_players', options = ['Best players', 'Choose players'], value = 'Best players', inputStyle={"margin-left": "5px", "margin-right": "5px"}), width = 3),
+                                dbc.Col(dcc.RadioItems(id = id('radio_select_players'), options = ['Best players', 'Choose players'], value = 'Best players', inputStyle={"margin-left": "5px", "margin-right": "5px"}), width = 3),
                                 dbc.Col(
                                     [
                                         html.Div(children = 
                                             [
-                                                dcc.Input(id = 'number_players', type = 'number', min = 2, max = 10, step = 1, placeholder = 'Nº Players', style={'width': 100}, value = 3)
-                                            ], id = 'container_best_players', style = {'display': 'flex', 'justify-content': 'center'}),
+                                                dcc.Input(id = id('number_players'), type = 'number', min = 2, max = 10, step = 1, placeholder = 'Nº Players', style={'width': 100}, value = 3)
+                                            ], id = id('container_best_players'), style = {'display': 'flex', 'justify-content': 'center'}),
                                         html.Div(children = 
                                             [
-                                                dcc.Dropdown(id = 'dropdown_players', options = players_list, placeholder = 'Select players', multi = True)
-                                            ], id = 'container_custom_players', style = {'display': 'none'})
+                                                dcc.Dropdown(id = id('dropdown_players'), options = players_list, placeholder = 'Select players', multi = True)
+                                            ], id = id('container_custom_players'), style = {'display': 'none'})
                                     ], width = 3),
-                                dbc.Col(dcc.Dropdown(id = 'dropdown_model', options = models_options, value = models_options[1]['value'], placeholder = 'Select a model'), width = {'size': 4, 'offset': 1}),
+                                dbc.Col(dcc.Dropdown(id = id('dropdown_model'), options = models_options, value = models_options[1]['value'], placeholder = 'Select a model'), width = {'size': 4, 'offset': 1}),
                                 dbc.Col(width = 1)
                             ], align = 'center', justify = 'center')
                     ]))
@@ -87,18 +89,18 @@ def serve_layout():
             dbc.Container(dbc.Card(
                 [
                     dbc.CardHeader(html.H3('MVP score timeseries', className = 'card_title', style={'textAlign': 'center'})),
-                    dbc.CardBody(dcc.Graph(id = 'graph_timeseries', figure = {})),
+                    dbc.CardBody(dcc.Graph(id = id('graph_timeseries'), figure = {})),
                     dbc.CardFooter(dbc.Row(
                         [
                             dbc.Col(
                                 [
                                     html.H5('Select desired interval', style={'textAlign': 'center'}),
-                                    dcc.DatePickerRange(id = 'daterange_timeseries', min_date_allowed = min_datetime, max_date_allowed = max_datetime, initial_visible_month = max_datetime, start_date = min_datetime, end_date = max_datetime, display_format = 'DD/MM/YYYY'),
+                                    dcc.DatePickerRange(id = id('daterange_timeseries'), min_date_allowed = min_datetime, max_date_allowed = max_datetime, initial_visible_month = max_datetime, start_date = min_datetime, end_date = max_datetime, display_format = 'DD/MM/YYYY'),
                                 ], width = 'auto'),
                             dbc.Col(
                                 [
                                     html.H5('Select model output', style={'textAlign': 'center'}),
-                                    dcc.RadioItems(id = 'radio_value_timeseries', options = dlib.results_labels, value = 'PREDSHARE', inputStyle={"margin-left": "8px", "margin-right": "5px"})
+                                    dcc.RadioItems(id = id('radio_value_timeseries'), options = dlib.results_labels, value = 'PREDSHARE', inputStyle={"margin-left": "8px", "margin-right": "5px"})
                                 ], width = 'auto')
                         ], align = 'center', justify = 'evenly'))
                 ]), style={"margin-top": "25px"}),
@@ -106,7 +108,7 @@ def serve_layout():
                 [
                     dbc.CardHeader(html.H3('Models comparator', className = 'card_title', style={'textAlign': 'center'})),
                     dbc.CardBody(dbc.Row(dbc.Col(dash_table.DataTable(
-                        id = 'table_models', 
+                        id = id('table_models'), 
                         data = [], 
                         columns = [],
                         style_cell = {'font-family': 'sans-serif', 'border': '1px solid black', 'color': 'black'},
@@ -128,14 +130,14 @@ def serve_layout():
                         ), width = 'auto'), align = 'center', justify = 'center')),
                     dbc.CardFooter(dbc.Row(
                         [
-                            dbc.Col(dcc.RadioItems(id = 'radio_metric_models', options = dlib.ext_results_labels, value = 'PREDSHARE', inputStyle={"margin-left": "8px", "margin-right": "5px"}, inline = True), width = 'auto')
+                            dbc.Col(dcc.RadioItems(id = id('radio_metric_models'), options = dlib.ext_results_labels, value = 'PREDSHARE', inputStyle={"margin-left": "8px", "margin-right": "5px"}, inline = True), width = 'auto')
                         ], align = 'center', justify = 'center'))
                 ]), style={"margin-top": "25px"}),
             dbc.Container(dbc.Card(
                 [
                     dbc.CardHeader(html.H3('Stats comparator', className = 'card_title', style={'textAlign': 'center'})),
                     dbc.CardBody(dbc.Row(dbc.Col(dash_table.DataTable(
-                        id = 'table_stats', 
+                        id = id('table_stats'), 
                         data = [], 
                         columns = [],
                         style_cell = {'font-family': 'sans-serif', 'border': '1px solid black', 'color': 'black'},
@@ -162,7 +164,7 @@ def serve_layout():
                         ), class_name = 'center'))),
                     dbc.CardFooter(dbc.Row(
                         [
-                            dbc.Col(dcc.Dropdown(id = 'dropdown_stats', options = stats_options, placeholder = 'Choose stats', multi = True))
+                            dbc.Col(dcc.Dropdown(id = id('dropdown_stats'), options = stats_options, placeholder = 'Choose stats', multi = True))
                         ], align = 'center', justify = 'center'))
                 ]), style={"margin-top": "25px", "margin-bottom": "25px"}),
             html.Footer(children = 
@@ -182,11 +184,11 @@ dash.register_page(__name__, path = f'/{season}')
 layout = serve_layout
 
 @callback(
-    Output('container_best_players', 'style'),
-    Output('container_custom_players', 'style'),
-    Input('radio_select_players', 'value')
+    Output(id('container_best_players'), 'style'),
+    Output(id('container_custom_players'), 'style'),
+    Input(id('radio_select_players'), 'value')
 )
-def update_select_players_2024(option):
+def update_select_players(option):
     show_best = {'display': 'flex', 'justify-content': 'center'}
     show_custom = {'display': 'block'}
     hide = {'display': 'none'}
@@ -196,16 +198,16 @@ def update_select_players_2024(option):
         return hide, show_custom
 
 @callback(
-    Output('graph_timeseries', 'figure'),
-    Input('radio_select_players', 'value'),
-    Input('number_players', 'value'),
-    Input('dropdown_players', 'value'),
-    Input('dropdown_model', 'value'),
-    Input('daterange_timeseries', 'start_date'),
-    Input('daterange_timeseries', 'end_date'),
-    Input('radio_value_timeseries', 'value')
+    Output(id('graph_timeseries'), 'figure'),
+    Input(id('radio_select_players'), 'value'),
+    Input(id('number_players'), 'value'),
+    Input(id('dropdown_players'), 'value'),
+    Input(id('dropdown_model'), 'value'),
+    Input(id('daterange_timeseries'), 'start_date'),
+    Input(id('daterange_timeseries'), 'end_date'),
+    Input(id('radio_value_timeseries'), 'value')
 )
-def update_timeseries_2024(option, number, players, model, start_date, end_date, value):
+def update_timeseries(option, number, players, model, start_date, end_date, value):
     if option == 'Best players':
         query_timeseries = f"""
             SELECT "DATETIME", "PLAYER", "{value}_{model}" FROM {db_table_name}
@@ -234,21 +236,21 @@ def update_timeseries_2024(option, number, players, model, start_date, end_date,
     return fig_timeseries
 
 @callback(
-    Output('table_models', 'columns'),
-    Output('table_models', 'data'),
-    Output('table_models', 'style_data_conditional'),
-    Output('table_models', 'style_cell_conditional'),
-    Input('radio_select_players', 'value'),
-    Input('number_players', 'value'),
-    Input('dropdown_players', 'value'),
-    Input('dropdown_model', 'value'),
-    Input('radio_metric_models', 'value'),
-    Input('table_models', 'selected_rows'),
-    State('dropdown_model', 'options'),
-    State('daterange_timeseries', 'max_date_allowed'),
+    Output(id('table_models'), 'columns'),
+    Output(id('table_models'), 'data'),
+    Output(id('table_models'), 'style_data_conditional'),
+    Output(id('table_models'), 'style_cell_conditional'),
+    Input(id('radio_select_players'), 'value'),
+    Input(id('number_players'), 'value'),
+    Input(id('dropdown_players'), 'value'),
+    Input(id('dropdown_model'), 'value'),
+    Input(id('radio_metric_models'), 'value'),
+    Input(id('table_models'), 'selected_rows'),
+    State(id('dropdown_model'), 'options'),
+    State(id('daterange_timeseries'), 'max_date_allowed'),
 )
 
-def update_table_models_2024(option, number, players, model, metric, rows, models_options, max_datetime):
+def update_table_models(option, number, players, model, metric, rows, models_options, max_datetime):
     models_list = [model['value'] for model in models_options]
     metric_cols_list = dlib.gen_metric_cols_list(models_list, model, metric)
     sql_metric_cols_list = dlib.string_list_sql(metric_cols_list)
@@ -327,17 +329,17 @@ def update_table_models_2024(option, number, players, model, metric, rows, model
     return cols, data, style_data, style_cell 
 
 @callback(
-    Output('table_stats', 'columns'),
-    Output('table_stats', 'data'),
-    Output('table_stats', 'style_cell_conditional'),
-    Input('radio_select_players', 'value'),
-    Input('number_players', 'value'),
-    Input('dropdown_players', 'value'),
-    Input('dropdown_model', 'value'),
-    Input('dropdown_stats', 'value'),
-    State('daterange_timeseries', 'max_date_allowed')
+    Output(id('table_stats'), 'columns'),
+    Output(id('table_stats'), 'data'),
+    Output(id('table_stats'), 'style_cell_conditional'),
+    Input(id('radio_select_players'), 'value'),
+    Input(id('number_players'), 'value'),
+    Input(id('dropdown_players'), 'value'),
+    Input(id('dropdown_model'), 'value'),
+    Input(id('dropdown_stats'), 'value'),
+    State(id('daterange_timeseries'), 'max_date_allowed')
 )
-def update_table_stats_2024(option, number, players, model, stats, max_datetime):
+def update_table_stats(option, number, players, model, stats, max_datetime):
     if option == 'Best players':
         query_stats = f"""
             SELECT "DATETIME", "PLAYER", "PREDSHARE_{model}", "PREDVOTES_{model}"{', ' + dlib.string_list_sql(stats) if stats else ''} FROM {db_table_name}
