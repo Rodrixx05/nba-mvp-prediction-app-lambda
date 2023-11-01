@@ -186,7 +186,7 @@ layout = serve_layout
     Output('container_custom_players', 'style'),
     Input('radio_select_players', 'value')
 )
-def update_select_players(option):
+def update_select_players_2024(option):
     show_best = {'display': 'flex', 'justify-content': 'center'}
     show_custom = {'display': 'block'}
     hide = {'display': 'none'}
@@ -205,7 +205,7 @@ def update_select_players(option):
     Input('daterange_timeseries', 'end_date'),
     Input('radio_value_timeseries', 'value')
 )
-def update_timeseries(option, number, players, model, start_date, end_date, value):
+def update_timeseries_2024(option, number, players, model, start_date, end_date, value):
     if option == 'Best players':
         query_timeseries = f"""
             SELECT "DATETIME", "PLAYER", "{value}_{model}" FROM {db_table_name}
@@ -248,7 +248,7 @@ def update_timeseries(option, number, players, model, start_date, end_date, valu
     State('daterange_timeseries', 'max_date_allowed'),
 )
 
-def update_table_models(option, number, players, model, metric, rows, models_options, max_datetime):
+def update_table_models_2024(option, number, players, model, metric, rows, models_options, max_datetime):
     models_list = [model['value'] for model in models_options]
     metric_cols_list = dlib.gen_metric_cols_list(models_list, model, metric)
     sql_metric_cols_list = dlib.string_list_sql(metric_cols_list)
@@ -337,7 +337,7 @@ def update_table_models(option, number, players, model, metric, rows, models_opt
     Input('dropdown_stats', 'value'),
     State('daterange_timeseries', 'max_date_allowed')
 )
-def update_table_stats(option, number, players, model, stats, max_datetime):
+def update_table_stats_2024(option, number, players, model, stats, max_datetime):
     if option == 'Best players':
         query_stats = f"""
             SELECT "DATETIME", "PLAYER", "PREDSHARE_{model}", "PREDVOTES_{model}"{', ' + dlib.string_list_sql(stats) if stats else ''} FROM {db_table_name}
