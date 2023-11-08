@@ -19,6 +19,11 @@ def id_factory(page: str):
         return f"{page}-{_id}"
     return func
 
+def treat_single_quote(players):
+  if players:
+    new_players = list(map(lambda player: player.replace("'", r"''"), players))
+    return str(new_players)[1:-1].replace('"', "'")
+
 cols_translator = {
     "MP_TOT": "Min Tot",
     "PREDSHARE_RF": "Predicted Share RF",

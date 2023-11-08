@@ -224,7 +224,7 @@ def update_timeseries(option, number, players, model, start_date, end_date, valu
     else:
         query_timeseries = f"""
             SELECT "DATETIME", "PLAYER", "{value}_{model}" FROM {db_table_name}
-            WHERE "PLAYER" IN ({str(players)[1:-1]})
+            WHERE "PLAYER" IN ({dlib.treat_single_quote(players)})
             AND "DATETIME" BETWEEN '{start_date}' AND '{end_date}'
             ORDER BY "DATETIME" DESC, "{value}_{model}" DESC;
         """
@@ -265,7 +265,7 @@ def update_table_models(option, number, players, model, metric, rows, models_opt
         query_models = f"""
             SELECT "DATETIME", "PLAYER", {sql_metric_cols_list} FROM {db_table_name}
             WHERE "DATETIME" = '{max_datetime}'
-            AND "PLAYER" IN ({str(players)[1:-1]})
+            AND "PLAYER" IN ({dlib.treat_single_quote(players)})
             ORDER BY "PREDSHARE_{model}" DESC;
         """
     models_df = pd.read_sql(query_models, engine)
@@ -351,7 +351,7 @@ def update_table_stats(option, number, players, model, stats, max_datetime):
         query_stats = f"""
             SELECT "DATETIME", "PLAYER", "PREDSHARE_{model}", "PREDVOTES_{model}"{', ' + dlib.string_list_sql(stats) if stats else ''} FROM {db_table_name}
             WHERE "DATETIME" = '{max_datetime}'
-            AND "PLAYER" IN ({str(players)[1:-1]})
+            AND "PLAYER" IN ({dlib.treat_single_quote(players)})
             ORDER BY "PREDSHARE_{model}" DESC;
         """
     stats_df = pd.read_sql(query_stats, engine)
