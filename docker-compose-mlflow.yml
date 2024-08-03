@@ -16,12 +16,14 @@ services:
   
   mlflow:
     container_name: mlflow
-    image: rodrixx/mlflow:1.0
+    image: rodrixx/mlflow:1.6
     build: ./mlflow-files/
     environment:
       MLFLOW_BACKEND_STORE_URI: '${MLFLOW_DB_CON}'
       MLFLOW_DEFAULT_ARTIFACT_ROOT: '${MLFLOW_S3_CON}'
       MLFLOW_HOST: '0.0.0.0'
+      MLFLOW_TRACKING_USERNAME: rodrixx
+      MLFLOW_TRACKING_PASSWORD: testing
     ports:
       - "5000:5000"
     restart: always
