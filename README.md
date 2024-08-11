@@ -10,21 +10,21 @@ The app is currently in an initial phase and it will be updated regularly during
 
 The following diagram shows the structure of the app:
 
-![app-diagram](/readme-pics/app_diagram.png)
+![app-diagram](/readme-pics/app_diagram_gcp.png)
 
 It is mainly composed by two systems which are in charge of two distinct tasks in the app: the data updater and the results visualizer.
 
 ## Data Updater
 
-Every day at 10:00 UTC, an *AWS Lambda* function is triggered through an *AWS Event Bridge* cronjob and executes the following actions:
+Every day at 10:00 UTC, a *GCP Cloud Function* function is triggered through a *GCP Cloud Scheduler* cronjob and executes the following actions:
 
 1. Webscraping is used to extract individual stats (both standard and advanced) from each NBA player from [Basketball Reference](https://www.basketball-reference.com). To do that, the function uses a custom module (named basketball_reference_rodrixx) created to extract the stats from the website using *BeautifulSoup4* library. This same module does also some data cleaning and parses the information into a DataFrame.
 2. The stats are pre-procesed so that the ML models can ingest them. This is achieved using a *Scikit-Learn* pipeline and several custom transformers defined in a custom module (named preprocessing_lib_rodrixx). The pipeline drops player rows which are repeated because of a team switch during the leage, sets indexes, encodes categorical data and drops some columns.
-3. The processed stats are passed to the ML models and the MVP results are predicted. The models in pickle format are saved in an *AWS S3* bucket, so that the lambda function can load them in the execution process. These models are explained in more detail in [this section](#ml-models)
+3. The processed stats are passed to the ML models and the MVP results are predicted. The models in pickle format are saved in a *GCP Cloud Storage* bucket, so that the lambda function can load them in the execution process. These models are explained in more detail in [this section](#ml-models)
 4. The output of the model is post-processed in order to extract additional metrics (votes, adjusted share and rank), and also deleted columns that were not used by the model are added again to the dataset. Column names are formatted so that the database can handle them. A custom module is used for this part of the process (named postprocessing_lib_rodrixx).
 5. Post-processed data is finally appended to the corresponding PostgreSQL table using the *SQLalchemy* module.
 
-This *AWS Lambda* function code is implemented in Python as a container image. The repo containing the code and Dockerfile to deploy the container image can be found [here](https://github.com/Rodrixx05/nba-mvp-prediction-lambda). The image is uploaded to *AWS Elastic Container Registry* so that *AWS Lambda* can run it every time the function is triggered.
+This *GCP Cloud Function* code is implemented in Python as a container image. The repo containing the code and Dockerfile to deploy the container image can be found [here](https://github.com/Rodrixx05/nba-mvp-prediction-data-getter). The image is uploaded to a *GCP Cloud Storage* bucket in ZIP format so that *GCP Cloud Function* can run it every time the it is triggered.
 
 ### ML Models
 
