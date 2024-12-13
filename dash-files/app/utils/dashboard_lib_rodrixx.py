@@ -178,7 +178,11 @@ cols_translator = {
 models_translator = {
     'RF': 'Random Forest (RF)',
     'ENS': 'Ensemble (ENS)',
-    'XGB': 'XGBoost (XGB)'
+    'XGB': 'XGBoost (XGB)',
+    'RFV2': 'Random Forest v2 (RFV2)',
+    'ENSV2': 'Ensemble v2 (ENSV2)',
+    'XGBV2': 'XGBoost v2 (XGBV2)',
+    'LGBMV2': 'LightGBM v2 (LGBMV2)'
 }
 
 results_labels = [
