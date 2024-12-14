@@ -173,7 +173,8 @@ cols_translator = {
     "TM": "Team",
     "PLAYER": "Player",
     "POS": "Position",
-    "TRP-DBL": "Triple-Doubles"
+    "TRP-DBL": "Triple-Doubles",
+    "TRP-DBL_RANK": "Triple-Doubles Rank"
 }
 
 models_translator = {
