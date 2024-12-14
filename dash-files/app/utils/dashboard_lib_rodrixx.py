@@ -172,7 +172,8 @@ cols_translator = {
     "BLK_RANK_TOT": "BLK Tot Rank",
     "TM": "Team",
     "PLAYER": "Player",
-    "POS": "Position"
+    "POS": "Position",
+    "TRP-DBL": "Triple-Doubles"
 }
 
 models_translator = {
