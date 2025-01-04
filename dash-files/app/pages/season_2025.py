@@ -49,7 +49,7 @@ def serve_layout():
     models_list = [re.search('^PREDVOTES_(.+)', element).group(1) for element in columns_list if re.search('^PREDVOTES', element)]
     models_options = [{'label': dlib.models_translator[model], 'value': model} for model in models_list]
     models_options.sort(key = lambda x: x['label'])
-    no_stats_list = ['SEASON', 'RK', 'PLAYER', 'AGE', 'TM', 'POS']
+    no_stats_list = ['PLAYER', 'AGE', 'TM', 'POS']
     stats_list = list(set(columns_list) - (set(dlib.gen_models_columns(models_list, columns_list)) | set(no_stats_list)))
     stats_options = [{'label': dlib.cols_translator[col], 'value': col} for col in stats_list]
     stats_options.sort(key = lambda x: x['label'])
